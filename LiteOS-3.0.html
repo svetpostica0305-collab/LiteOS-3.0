@@ -1,0 +1,2731 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>LiteOS 3.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{
+  --glass:rgba(255,255,255,0.12);
+  --glass2:rgba(255,255,255,0.07);
+  --border:rgba(255,255,255,0.18);
+  --blur:blur(24px);
+  --accent:#38bdf8;
+  --green:#4ade80;
+  --red:#f87171;
+  --yellow:#fbbf24;
+  --purple:#a78bfa;
+  --text:#fff;
+  --dim:rgba(255,255,255,0.5);
+  --dim2:rgba(255,255,255,0.25);
+}
+body{font-family:'Nunito',sans-serif;height:100dvh;overflow:hidden;background:#08081a;color:#fff;user-select:none;}
+
+/* WALLPAPER */
+#wp{position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse at 20% 50%,rgba(99,102,241,.55) 0%,transparent 60%),
+    radial-gradient(ellipse at 80% 20%,rgba(14,165,233,.45) 0%,transparent 50%),
+    radial-gradient(ellipse at 60% 80%,rgba(167,139,250,.38) 0%,transparent 55%),
+    linear-gradient(135deg,#0d0d2b 0%,#0a1628 50%,#0d0d2b 100%);
+  animation:wshift 14s ease-in-out infinite alternate;}
+@keyframes wshift{0%{filter:hue-rotate(0deg) brightness(1)}100%{filter:hue-rotate(22deg) brightness(1.12)}}
+
+/* STATUSBAR */
+#sb{position:fixed;top:0;left:0;right:0;height:46px;z-index:500;
+  display:flex;align-items:center;justify-content:space-between;padding:0 18px;
+  background:rgba(0,0,0,.35);backdrop-filter:var(--blur);
+  border-bottom:1px solid rgba(255,255,255,.09);}
+#sb-time{font-size:15px;font-weight:800;}
+#sb-right{display:flex;align-items:center;gap:8px;font-size:13px;}
+.sb-wifi{font-size:15px;}
+.sb-bat{font-size:14px;}
+
+/* LOCKSCREEN */
+#lock{position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:radial-gradient(ellipse at 30% 40%,rgba(99,102,241,.6) 0%,transparent 60%),radial-gradient(ellipse at 70% 70%,rgba(14,165,233,.4) 0%,transparent 50%),linear-gradient(135deg,#0d0d2b,#0a1628);}
+.lk-time{font-size:72px;font-weight:200;letter-spacing:-3px;}
+.lk-date{font-size:14px;color:var(--dim);letter-spacing:1px;}
+.lk-logo{font-size:11px;letter-spacing:7px;color:var(--dim2);text-transform:uppercase;margin-top:6px;}
+.lk-hint{position:absolute;bottom:55px;font-size:13px;color:var(--dim2);animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:.3}50%{opacity:.9}}
+
+/* DESKTOP */
+#desktop{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;padding:46px 0 80px;}
+.os-label{position:absolute;top:60px;left:50%;transform:translateX(-50%);
+  font-size:12px;font-weight:300;letter-spacing:7px;color:var(--dim2);text-transform:uppercase;}
+
+/* APP GRID */
+#grid{display:grid;grid-template-columns:repeat(4,72px);gap:22px 18px;padding:8px;}
+.aico{display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;transition:transform .15s;}
+.aico:active{transform:scale(.83);}
+.aico-wrap{width:64px;height:64px;border-radius:18px;display:flex;align-items:center;justify-content:center;
+  font-size:28px;background:var(--glass);border:1px solid var(--border);backdrop-filter:var(--blur);
+  box-shadow:0 6px 24px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.22);
+  position:relative;overflow:hidden;transition:background .2s;}
+.aico-wrap::before{content:'';position:absolute;top:0;left:0;right:0;height:50%;
+  background:linear-gradient(rgba(255,255,255,.12),transparent);border-radius:18px 18px 0 0;pointer-events:none;}
+.aico:hover .aico-wrap{background:rgba(255,255,255,.2);}
+.aico-label{font-size:11px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6);text-align:center;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* BOTTOM NAV */
+#bnav{position:fixed;bottom:0;left:0;right:0;height:74px;z-index:500;
+  display:flex;align-items:center;justify-content:space-around;padding:0 50px;
+  background:rgba(0,0,0,.5);backdrop-filter:var(--blur);border-top:1px solid rgba(255,255,255,.07);}
+.nb{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:19px;cursor:pointer;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.13);
+  transition:background .15s,transform .12s;color:#fff;font-weight:800;}
+.nb:hover{background:rgba(255,255,255,.18);}
+.nb:active{transform:scale(.83);}
+.nb-home{width:52px;height:52px;background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.28);}
+
+/* RECENT APPS */
+#rec{position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.78);backdrop-filter:blur(20px);
+  display:none;flex-direction:column;justify-content:flex-end;padding-bottom:82px;}
+#rec.open{display:flex;animation:fadein .2s ease;}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+#rec-label{text-align:center;font-size:11px;color:var(--dim2);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;}
+#rec-scroll{display:flex;gap:10px;overflow-x:auto;padding:0 14px 4px;scrollbar-width:none;align-items:flex-end;}
+#rec-scroll::-webkit-scrollbar{display:none;}
+.rc{flex-shrink:0;width:145px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);
+  border-radius:16px;overflow:hidden;cursor:pointer;transition:transform .15s;position:relative;}
+.rc:hover{transform:translateY(-4px);}
+.rc-hd{padding:8px 10px;background:rgba(255,255,255,.06);display:flex;align-items:center;gap:5px;
+  font-size:11px;font-weight:800;border-bottom:1px solid rgba(255,255,255,.07);}
+.rc-prev{height:90px;display:flex;align-items:center;justify-content:center;font-size:36px;opacity:.4;}
+.rc-x{position:absolute;top:4px;right:5px;width:18px;height:18px;border-radius:50%;
+  background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.14);
+  display:flex;align-items:center;justify-content:center;font-size:9px;cursor:pointer;z-index:2;}
+.rc-x:hover{background:rgba(239,68,68,.7);}
+#rec-clear{text-align:center;margin-top:10px;font-size:12px;color:var(--dim2);cursor:pointer;}
+#rec-clear:hover{color:#fff;}
+
+/* APP SCREEN */
+.scr{position:fixed;inset:0;z-index:700;display:none;flex-direction:column;
+  background:#080818;backdrop-filter:blur(40px);}
+.scr.open{display:flex;animation:appopen .27s cubic-bezier(.34,1.4,.64,1);}
+@keyframes appopen{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:scale(1)}}
+@keyframes appclose{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(.94)}}
+
+.atb{height:52px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 14px;flex-shrink:0;background:rgba(255,255,255,.05);border-bottom:1px solid rgba(255,255,255,.09);}
+.atb-title{font-size:14px;font-weight:800;letter-spacing:.5px;}
+.btn-back{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;
+  padding:5px 13px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;
+  font-family:'Nunito',sans-serif;transition:background .15s;}
+.btn-back:hover{background:rgba(255,255,255,.2);}
+.scr-body{flex:1;overflow-y:auto;padding:14px;}
+.scr-body::-webkit-scrollbar{width:3px;}
+.scr-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px;}
+
+/* TOAST */
+#toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%);
+  background:rgba(15,15,35,.95);border:1px solid rgba(255,255,255,.2);
+  color:#fff;padding:9px 20px;border-radius:30px;font-size:13px;font-weight:700;
+  z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;
+  backdrop-filter:blur(20px);white-space:nowrap;}
+#toast.show{opacity:1;}
+
+/* TOGGLE */
+.tog{width:44px;height:26px;background:rgba(255,255,255,.2);border-radius:13px;
+  position:relative;cursor:pointer;transition:background .3s;flex-shrink:0;}
+.tog.on{background:rgba(74,222,128,.8);}
+.tog::after{content:'';position:absolute;width:20px;height:20px;background:#fff;
+  border-radius:50%;top:3px;left:3px;transition:transform .3s;box-shadow:0 2px 5px rgba(0,0,0,.3);}
+.tog.on::after{transform:translateX(18px);}
+
+/* SETTINGS STYLES */
+.set-sect{font-size:11px;font-weight:800;color:var(--dim);text-transform:uppercase;
+  letter-spacing:1.2px;margin:14px 0 6px 4px;}
+.set-group{background:var(--glass);border:1px solid var(--border);border-radius:18px;overflow:hidden;margin-bottom:6px;}
+.set-row{display:flex;align-items:center;justify-content:space-between;
+  padding:13px 14px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;transition:background .15s;}
+.set-row:last-child{border-bottom:none;}
+.set-row:hover,.set-row:active{background:rgba(255,255,255,.05);}
+.set-lft{display:flex;align-items:center;gap:11px;}
+.set-ico{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.set-lbl{font-size:14px;font-weight:700;}
+.set-val{font-size:12px;color:var(--dim);}
+.set-arrow{color:var(--dim);font-size:16px;}
+
+/* SLIDER ROWS */
+.set-slider-row{padding:10px 14px 14px;}
+.set-slider-label{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+input[type=range]{width:100%;accent-color:var(--accent);height:4px;}
+
+/* STORE STYLES */
+.store-banner{background:linear-gradient(135deg,rgba(34,197,94,.3),rgba(16,185,129,.18));
+  border:1px solid rgba(34,197,94,.25);border-radius:18px;padding:18px;margin-bottom:14px;text-align:center;}
+.store-banner h2{font-size:20px;font-weight:800;}
+.store-banner p{color:var(--dim);font-size:12px;margin-top:2px;}
+.store-tabs{display:flex;gap:6px;margin-bottom:14px;}
+.stab{padding:7px 16px;border-radius:20px;font-size:12px;font-weight:800;cursor:pointer;
+  background:var(--glass2);border:1px solid var(--border);color:var(--dim);transition:all .2s;}
+.stab.on{background:rgba(56,189,248,.25);border-color:rgba(56,189,248,.5);color:#7dd3fc;}
+.store-item{background:var(--glass);border:1px solid var(--border);border-radius:16px;
+  padding:11px 12px;display:flex;align-items:center;gap:12px;margin-bottom:8px;}
+.si-ico{font-size:34px;flex-shrink:0;}
+.si-info{flex:1;}
+.si-name{font-size:14px;font-weight:800;}
+.si-desc{font-size:11px;color:var(--dim);margin-top:2px;}
+.si-size{font-size:10px;color:var(--dim2);margin-top:1px;}
+.btn-get{background:rgba(56,189,248,.25);border:1px solid rgba(56,189,248,.45);
+  color:#7dd3fc;padding:6px 13px;border-radius:20px;font-size:11px;font-weight:800;
+  cursor:pointer;font-family:'Nunito',sans-serif;white-space:nowrap;transition:all .2s;}
+.btn-get:hover{background:rgba(56,189,248,.4);}
+.btn-get.installed{background:rgba(74,222,128,.2);border-color:rgba(74,222,128,.4);color:#4ade80;cursor:default;}
+.btn-get.loading{background:rgba(251,191,36,.2);border-color:rgba(251,191,36,.4);color:#fbbf24;cursor:default;}
+.install-bar{width:100%;height:3px;background:rgba(255,255,255,.1);border-radius:2px;margin-top:6px;overflow:hidden;display:none;}
+.install-progress{height:100%;background:var(--accent);border-radius:2px;width:0%;transition:width .05s linear;}
+
+/* BROWSER */
+#br-bar{flex-shrink:0;padding:8px 10px;background:rgba(0,0,0,.35);border-bottom:1px solid rgba(255,255,255,.09);}
+.br-nav{display:flex;gap:5px;align-items:center;margin-bottom:6px;}
+.btn-nav{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);color:#fff;
+  min-width:32px;height:32px;border-radius:8px;font-size:15px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-family:'Nunito',sans-serif;}
+.btn-nav:hover{background:rgba(255,255,255,.18);}
+#br-url{flex:1;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);
+  border-radius:10px;padding:7px 12px;color:#fff;font-size:13px;
+  font-family:'Nunito',sans-serif;outline:none;}
+#br-url:focus{border-color:var(--accent);}
+#br-url::placeholder{color:var(--dim2);}
+.btn-go{background:rgba(14,165,233,.3);border:1px solid rgba(14,165,233,.5);
+  color:#7dd3fc;padding:7px 13px;border-radius:10px;font-size:12px;font-weight:800;
+  cursor:pointer;font-family:'Nunito',sans-serif;}
+.btn-menu3{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);color:#fff;
+  width:32px;height:32px;border-radius:8px;font-size:18px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;}
+.btn-menu3:hover{background:rgba(255,255,255,.18);}
+.br-tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;align-items:center;}
+.br-tabs::-webkit-scrollbar{display:none;}
+.btab{flex-shrink:0;padding:4px 9px;border-radius:7px;background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.11);font-size:11px;font-weight:700;cursor:pointer;
+  color:var(--dim);display:flex;align-items:center;gap:4px;max-width:110px;white-space:nowrap;}
+.btab span:first-child{overflow:hidden;text-overflow:ellipsis;}
+.btab.active{background:rgba(255,255,255,.16);color:#fff;}
+.btab .bx{opacity:.5;font-size:10px;}
+.btab .bx:hover{opacity:1;color:#f87171;}
+.btn-addtab{flex-shrink:0;width:24px;height:24px;border-radius:6px;
+  background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);
+  color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+#br-iframe-wrap{flex:1;position:relative;background:#fff;display:none;}
+#br-iframe{width:100%;height:100%;border:none;}
+#br-loading{position:absolute;inset:0;background:rgba(8,8,22,.96);
+  display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;}
+#br-loading.show{display:flex;}
+.spin{width:32px;height:32px;border:3px solid rgba(255,255,255,.1);
+  border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+#br-home{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:18px;}
+.brhome-logo{font-size:42px;}
+.brhome-title{font-size:20px;font-weight:800;}
+.brhome-sub{font-size:12px;color:var(--dim);}
+.qlinks{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;max-width:300px;margin-top:6px;}
+.ql{background:var(--glass);border:1px solid var(--border);border-radius:13px;
+  padding:10px 5px;text-align:center;cursor:pointer;transition:background .15s;}
+.ql:hover{background:rgba(255,255,255,.2);}
+.ql-i{font-size:20px;}
+.ql-n{font-size:10px;color:var(--dim);margin-top:3px;}
+#br-blocked{display:none;position:absolute;inset:0;background:rgba(8,8,22,.97);
+  flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:28px;text-align:center;z-index:5;}
+.blocked-ico{font-size:46px;}
+.blocked-title{font-size:16px;font-weight:800;}
+.blocked-msg{font-size:12px;color:var(--dim);max-width:260px;line-height:1.5;}
+.btn-blocked-open{background:rgba(56,189,248,.3);border:1px solid rgba(56,189,248,.5);
+  color:#7dd3fc;padding:10px 22px;border-radius:20px;font-size:13px;font-weight:800;
+  cursor:pointer;font-family:'Nunito',sans-serif;}
+.btn-blocked-home{background:rgba(255,255,255,.07);border:1px solid var(--border);color:#fff;
+  padding:8px 20px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;}
+
+/* BROWSER MENU POPUP */
+#br-menu{position:absolute;top:44px;right:10px;z-index:999;
+  background:rgba(18,18,38,.97);border:1px solid var(--border);border-radius:16px;
+  padding:8px;min-width:190px;display:none;backdrop-filter:blur(20px);
+  box-shadow:0 8px 32px rgba(0,0,0,.6);}
+#br-menu.open{display:block;}
+.bm-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;
+  cursor:pointer;font-size:13px;font-weight:700;transition:background .15s;}
+.bm-item:hover{background:rgba(255,255,255,.1);}
+.bm-icon{font-size:16px;width:22px;text-align:center;}
+.bm-sep{height:1px;background:rgba(255,255,255,.08);margin:4px 0;}
+
+/* BROWSER SETTINGS / ACCOUNTS / DOWNLOADS PANELS */
+.br-panel{position:fixed;inset:0;z-index:800;display:none;flex-direction:column;background:#080818;}
+.br-panel.open{display:flex;animation:appopen .25s ease;}
+.br-panel-body{flex:1;overflow-y:auto;padding:14px;}
+
+/* ACCOUNTS */
+.acc-card{background:var(--glass);border:1px solid var(--border);border-radius:16px;
+  padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;}
+.acc-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:800;background:rgba(99,102,241,.4);border:2px solid rgba(99,102,241,.6);flex-shrink:0;}
+.acc-info{flex:1;}
+.acc-name{font-size:14px;font-weight:800;}
+.acc-email{font-size:12px;color:var(--dim);}
+.acc-badge{font-size:10px;background:rgba(74,222,128,.25);border:1px solid rgba(74,222,128,.4);
+  color:#4ade80;padding:2px 8px;border-radius:20px;font-weight:800;}
+.btn-acc-del{background:rgba(248,113,113,.2);border:1px solid rgba(248,113,113,.35);
+  color:#f87171;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:800;
+  cursor:pointer;font-family:'Nunito',sans-serif;}
+
+/* LOGIN FORM */
+.form-wrap{background:var(--glass);border:1px solid var(--border);border-radius:18px;padding:18px;margin-top:12px;}
+.form-title{font-size:16px;font-weight:800;margin-bottom:14px;}
+.form-tabs{display:flex;gap:6px;margin-bottom:14px;}
+.ftab{flex:1;text-align:center;padding:8px;border-radius:10px;font-size:13px;font-weight:800;
+  cursor:pointer;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--dim);}
+.ftab.on{background:rgba(56,189,248,.25);border-color:rgba(56,189,248,.5);color:#7dd3fc;}
+.finput{width:100%;background:rgba(255,255,255,.08);border:1px solid var(--border);border-radius:10px;
+  padding:10px 13px;color:#fff;font-size:13px;font-family:'Nunito',sans-serif;outline:none;margin-bottom:8px;}
+.finput:focus{border-color:var(--accent);}
+.finput::placeholder{color:var(--dim2);}
+.btn-submit{width:100%;background:rgba(56,189,248,.3);border:1px solid rgba(56,189,248,.5);
+  color:#7dd3fc;padding:11px;border-radius:12px;font-size:14px;font-weight:800;
+  cursor:pointer;font-family:'Nunito',sans-serif;margin-top:4px;}
+.btn-submit:hover{background:rgba(56,189,248,.45);}
+
+/* DOWNLOADS */
+.dl-item{background:var(--glass);border:1px solid var(--border);border-radius:14px;
+  padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;}
+.dl-ico{font-size:26px;flex-shrink:0;}
+.dl-info{flex:1;}
+.dl-name{font-size:13px;font-weight:800;}
+.dl-size{font-size:11px;color:var(--dim);margin-top:2px;}
+.dl-status{font-size:11px;margin-top:2px;}
+.dl-open{background:rgba(255,255,255,.08);border:1px solid var(--border);color:#fff;
+  padding:5px 11px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;}
+.dl-url-form{display:flex;gap:6px;margin-bottom:12px;}
+.dl-url-input{flex:1;background:rgba(255,255,255,.08);border:1px solid var(--border);border-radius:10px;
+  padding:8px 12px;color:#fff;font-size:12px;font-family:'Nunito',sans-serif;outline:none;}
+.dl-url-input::placeholder{color:var(--dim2);}
+.btn-dl-add{background:rgba(74,222,128,.25);border:1px solid rgba(74,222,128,.4);color:#4ade80;
+  padding:8px 14px;border-radius:10px;font-size:12px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;}
+
+/* BROWSER SETTINGS */
+.bset-row{display:flex;align-items:center;justify-content:space-between;
+  padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06);}
+.bset-row:last-child{border-bottom:none;}
+.bset-lbl{font-size:14px;font-weight:700;}
+.bset-desc{font-size:11px;color:var(--dim);margin-top:2px;}
+.bset-val{font-size:12px;color:var(--dim);}
+
+/* MAIL */
+#mail-sidebar{width:100%;flex-shrink:0;}
+.mail-folders{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none;margin-bottom:10px;}
+.mail-folders::-webkit-scrollbar{display:none;}
+.mfold{flex-shrink:0;padding:7px 14px;border-radius:20px;font-size:12px;font-weight:800;
+  cursor:pointer;background:var(--glass2);border:1px solid var(--border);color:var(--dim);}
+.mfold.on{background:rgba(56,189,248,.25);border-color:rgba(56,189,248,.5);color:#7dd3fc;}
+.mail-list{}
+.mail-item{background:var(--glass);border:1px solid var(--border);border-radius:14px;
+  padding:12px 13px;margin-bottom:7px;cursor:pointer;transition:background .15s;}
+.mail-item:hover{background:rgba(255,255,255,.18);}
+.mail-item.unread .mi-subj{font-weight:900;}
+.mi-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;}
+.mi-from{font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.mi-time{font-size:11px;color:var(--dim);flex-shrink:0;}
+.mi-subj{font-size:12px;font-weight:700;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.mi-preview{font-size:11px;color:var(--dim2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.mi-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+.mail-view{display:none;flex:1;flex-direction:column;}
+.mail-view.open{display:flex;}
+.mv-hd{padding:14px;border-bottom:1px solid rgba(255,255,255,.08);}
+.mv-subj{font-size:17px;font-weight:900;margin-bottom:6px;}
+.mv-from{font-size:13px;color:var(--dim);}
+.mv-to{font-size:12px;color:var(--dim2);margin-top:2px;}
+.mv-body{flex:1;padding:14px;font-size:13px;line-height:1.65;color:rgba(255,255,255,.85);overflow-y:auto;}
+.btn-reply{background:rgba(56,189,248,.25);border:1px solid rgba(56,189,248,.45);color:#7dd3fc;
+  padding:9px 20px;border-radius:20px;font-size:13px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;}
+.compose-wrap{position:fixed;bottom:0;left:0;right:0;z-index:900;background:rgba(10,10,30,.98);
+  border-top:1px solid var(--border);backdrop-filter:blur(20px);display:none;flex-direction:column;
+  max-height:70vh;}
+.compose-wrap.open{display:flex;}
+.compose-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;
+  border-bottom:1px solid rgba(255,255,255,.08);}
+.compose-title{font-size:14px;font-weight:800;}
+.cinput{width:100%;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.1);
+  padding:10px 14px;color:#fff;font-size:13px;font-family:'Nunito',sans-serif;outline:none;}
+.cinput::placeholder{color:var(--dim2);}
+.compose-body{flex:1;overflow-y:auto;}
+#compose-text{width:100%;background:transparent;border:none;padding:12px 14px;
+  color:#fff;font-size:13px;font-family:'Nunito',sans-serif;outline:none;resize:none;min-height:120px;}
+.compose-footer{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;}
+.btn-send{background:rgba(56,189,248,.3);border:1px solid rgba(56,189,248,.5);color:#7dd3fc;
+  padding:8px 20px;border-radius:20px;font-size:13px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;}
+.mail-login-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
+
+/* YOUTUBE */
+#yt-search{display:flex;gap:6px;margin-bottom:14px;}
+#yt-url{flex:1;background:rgba(255,255,255,.1);border:1px solid var(--border);border-radius:10px;
+  padding:9px 12px;color:#fff;font-size:13px;font-family:'Nunito',sans-serif;outline:none;}
+#yt-url::placeholder{color:var(--dim2);}
+#yt-url:focus{border-color:var(--accent);}
+.btn-yt-go{background:rgba(248,113,113,.3);border:1px solid rgba(248,113,113,.5);color:#f87171;
+  padding:9px 14px;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;}
+.yt-player{width:100%;aspect-ratio:16/9;border:none;border-radius:14px;background:#000;margin-bottom:12px;}
+.yt-suggestions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+.yt-card{background:var(--glass);border:1px solid var(--border);border-radius:12px;
+  overflow:hidden;cursor:pointer;transition:background .15s;}
+.yt-card:hover{background:rgba(255,255,255,.18);}
+.yt-thumb{width:100%;aspect-ratio:16/9;background:rgba(0,0,0,.5);display:flex;
+  align-items:center;justify-content:center;font-size:28px;position:relative;}
+.yt-play{position:absolute;width:36px;height:36px;background:rgba(248,113,113,.8);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.yt-info{padding:8px;}
+.yt-title{font-size:12px;font-weight:800;line-height:1.3;}
+.yt-ch{font-size:10px;color:var(--dim);margin-top:3px;}
+
+/* DEVMODE */
+#dev{position:fixed;inset:0;z-index:1200;background:#000;display:none;flex-direction:column;}
+#dev.open{display:flex;}
+#dev-top{height:44px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;background:#0d1117;border-bottom:1px solid #30363d;}
+#dev-tabs{display:flex;background:#161b22;border-bottom:1px solid #30363d;}
+.dtab{padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;color:#8b949e;
+  border-bottom:2px solid transparent;}
+.dtab.on{color:#58a6ff;border-bottom-color:#58a6ff;}
+#dev-body{flex:1;overflow-y:auto;}
+.dpanel{display:none;padding:14px;}
+.dpanel.on{display:block;}
+#term-out{background:#0d1117;border:1px solid #30363d;border-radius:10px;
+  padding:12px;height:260px;overflow-y:auto;margin-bottom:10px;font-family:monospace;font-size:12px;}
+#term-in-row{display:flex;gap:8px;}
+#term-in{flex:1;background:#161b22;border:1px solid #30363d;border-radius:8px;
+  padding:8px 12px;color:#e6edf3;font-size:13px;outline:none;font-family:'Nunito',sans-serif;}
+.btn-run{background:#238636;border:1px solid #2ea043;color:#fff;
+  padding:8px 14px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;}
+.dev-opt{display:flex;align-items:center;justify-content:space-between;
+  padding:12px 0;border-bottom:1px solid #21262d;}
+.dev-opt:last-child{border-bottom:none;}
+.dev-opt-lbl{font-size:14px;font-weight:700;color:#e6edf3;}
+.dev-opt-desc{font-size:11px;color:#8b949e;margin-top:2px;}
+.fw-item{background:#161b22;border:1px solid #30363d;border-radius:12px;
+  padding:12px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.fw-name{font-size:14px;font-weight:700;color:#e6edf3;}
+.fw-ver{font-size:11px;color:#8b949e;margin-top:2px;}
+.btn-flash{background:#1f6feb;border:1px solid #388bfd;color:#fff;
+  padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;}
+.btn-flash.inst{background:#238636;border-color:#2ea043;cursor:default;}
+#fps-el{position:fixed;top:50px;right:8px;background:rgba(0,0,0,.75);color:#39d353;
+  font-size:11px;font-family:monospace;padding:2px 8px;border-radius:6px;z-index:2000;display:none;}
+#tdot{position:fixed;width:26px;height:26px;border:2px solid #38bdf8;border-radius:50%;
+  pointer-events:none;z-index:3000;display:none;transform:translate(-50%,-50%);}
+
+/* WIFI SCAN */
+.wifi-net{background:var(--glass);border:1px solid var(--border);border-radius:13px;
+  padding:11px 13px;margin-bottom:7px;display:flex;align-items:center;gap:11px;cursor:pointer;}
+.wifi-net:hover{background:rgba(255,255,255,.18);}
+.wifi-signal{font-size:18px;}
+.wifi-name{font-size:14px;font-weight:800;}
+.wifi-type{font-size:11px;color:var(--dim);}
+.wifi-lock{margin-left:auto;font-size:14px;}
+.wifi-connected{background:rgba(74,222,128,.15);border-color:rgba(74,222,128,.3);}
+
+/* SUBSCREEN */
+.subscr{position:fixed;inset:0;z-index:750;display:none;flex-direction:column;background:#080818;}
+.subscr.open{display:flex;animation:appopen .25s ease;}
+</style>
+</head>
+<body>
+
+
+
+<div id="wp"></div>
+
+<!-- STATUSBAR -->
+<div id="sb">
+  <div id="sb-time">00:00</div>
+  <div id="sb-right">
+    <span class="sb-wifi" id="sb-wifi">📶</span>
+    <span>🔋87%</span>
+  </div>
+</div>
+
+<!-- DESKTOP -->
+<div id="desktop">
+  <div class="os-logo">LiteOS 3.0</div>
+  <div id="grid"></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div id="bnav">
+  <div class="nb" onclick="goBack()">‹</div>
+  <div class="nb nb-home" onclick="goHome()">⬤</div>
+  <div class="nb" onclick="toggleRec()">▣</div>
+</div>
+
+<!-- RECENTS -->
+<div id="rec">
+  <div id="rec-label">Последние приложения</div>
+  <div id="rec-scroll"></div>
+  <div id="rec-clear" onclick="clearRec()">✕ Очистить всё</div>
+</div>
+
+<!-- ===== LITE STORE ===== -->
+<div class="scr" id="scr-store">
+  <div class="atb">
+    <button class="btn-back" onclick="closeApp('store')">← Назад</button>
+    <span class="atb-title">🛒 LITE STORE</span>
+    <span style="width:60px"></span>
+  </div>
+  <div class="scr-body">
+    <div class="store-banner"><h2>Lite Store</h2><p>Бесплатные приложения для LiteOS</p></div>
+    <div class="store-tabs" id="store-tabs">
+      <div class="stab on" onclick="storeTab('all',this)">Все</div>
+      <div class="stab" onclick="storeTab('media',this)">Медиа</div>
+      <div class="stab" onclick="storeTab('util',this)">Утилиты</div>
+      <div class="stab" onclick="storeTab('games',this)">Игры</div>
+    </div>
+    <div id="store-list"></div>
+  </div>
+</div>
+
+<!-- ===== KONA BROWSER ===== -->
+<div class="scr" id="scr-browser">
+  <div class="atb">
+    <button class="btn-back" onclick="closeApp('browser')">← Назад</button>
+    <span class="atb-title">🌐 KONA Browser</span>
+    <span style="width:60px"></span>
+  </div>
+  <div id="br-bar">
+    <div class="br-nav">
+      <button class="btn-nav" onclick="brBack()">‹</button>
+      <button class="btn-nav" onclick="brFwd()">›</button>
+      <button class="btn-nav" onclick="brRefresh()">↻</button>
+      <input id="br-url" type="text" placeholder="Введите URL или поисковый запрос..." onkeydown="if(event.key==='Enter')brGo()"/>
+      <button class="btn-go" onclick="brGo()">GO</button>
+      <button class="btn-menu3" onclick="toggleBrMenu(event)">⋮</button>
+    </div>
+    <div class="br-tabs" id="br-tabs"></div>
+  </div>
+  <div id="br-home">
+    <div class="brhome-logo">🌐</div>
+    <div class="brhome-title">KONA Browser</div>
+    <div class="brhome-sub">by KONA Tech</div>
+    <div class="qlinks">
+      <div class="ql" onclick="brLoad('https://duckduckgo.com')"><div class="ql-i">🦆</div><div class="ql-n">DuckDuckGo</div></div>
+      <div class="ql" onclick="brLoad('https://www.wikipedia.org')"><div class="ql-i">📖</div><div class="ql-n">Wikipedia</div></div>
+      <div class="ql" onclick="brLoad('https://www.openstreetmap.org')"><div class="ql-i">🗺</div><div class="ql-n">Maps</div></div>
+      <div class="ql" onclick="brLoad('https://archive.org')"><div class="ql-i">🏛</div><div class="ql-n">Archive</div></div>
+      <div class="ql" onclick="brLoad('https://translate.google.com')"><div class="ql-i">🌍</div><div class="ql-n">Translate</div></div>
+      <div class="ql" onclick="brLoad('https://www.reddit.com')"><div class="ql-i">🔴</div><div class="ql-n">Reddit</div></div>
+    </div>
+  </div>
+  <div id="br-iframe-wrap">
+    <div id="br-loading"><div class="spin"></div><span style="font-size:13px;color:var(--dim)">Загрузка...</span></div>
+    <div id="br-blocked">
+      <div class="blocked-ico">🚫</div>
+      <div class="blocked-title">Сайт заблокирован</div>
+      <div class="blocked-msg" id="br-blocked-url">Этот сайт запрещает загрузку внутри других страниц (X-Frame-Options). Откройте его в настоящем браузере.</div>
+      <button class="btn-blocked-open" onclick="brOpenExternal()">Открыть в браузере ↗</button>
+      <button class="btn-blocked-home" onclick="brShowHome()">← На главную</button>
+    </div>
+    <iframe id="br-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"></iframe>
+  </div>
+  <!-- browser menu -->
+  <div id="br-menu">
+    <div class="bm-item" onclick="openBrPanel('accounts')"><span class="bm-icon">👤</span>Аккаунты</div>
+    <div class="bm-item" onclick="openBrPanel('downloads')"><span class="bm-icon">📥</span>Загрузки</div>
+    <div class="bm-sep"></div>
+    <div class="bm-item" onclick="brOpenExternal()"><span class="bm-icon">↗</span>Открыть в браузере</div>
+    <div class="bm-item" onclick="brRefresh()"><span class="bm-icon">↻</span>Обновить</div>
+    <div class="bm-sep"></div>
+    <div class="bm-item" onclick="openBrPanel('brsettings')"><span class="bm-icon">⚙️</span>Настройки браузера</div>
+  </div>
+</div>
+
+<!-- BROWSER: ACCOUNTS PANEL -->
+<div class="br-panel" id="brp-accounts">
+  <div class="atb">
+    <button class="btn-back" onclick="closeBrPanel('accounts')">← Назад</button>
+    <span class="atb-title">👤 Аккаунты</span>
+    <span style="width:60px"></span>
+  </div>
+  <div class="br-panel-body">
+    <div id="acc-list"></div>
+    <div class="form-wrap">
+      <div class="form-title">Войти / Создать аккаунт</div>
+      <div class="form-tabs">
+        <div class="ftab on" id="ftab-login" onclick="switchAccTab('login')">Войти</div>
+        <div class="ftab" id="ftab-reg" onclick="switchAccTab('reg')">Регистрация</div>
+      </div>
+      <div id="acc-form-login">
+        <input class="finput" id="acc-email-l" type="email" placeholder="Email">
+        <input class="finput" id="acc-pass-l" type="password" placeholder="Пароль">
+        <button class="btn-submit" onclick="accLogin()">Войти</button>
+      </div>
+      <div id="acc-form-reg" style="display:none">
+        <input class="finput" id="acc-name-r" type="text" placeholder="Имя">
+        <input class="finput" id="acc-email-r" type="email" placeholder="Email">
+        <input class="finput" id="acc-pass-r" type="password" placeholder="Пароль (мин. 6 символов)">
+        <button class="btn-submit" onclick="accRegister()">Создать аккаунт</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BROWSER: DOWNLOADS PANEL -->
+<div class="br-panel" id="brp-downloads">
+  <div class="atb">
+    <button class="btn-back" onclick="closeBrPanel('downloads')">← Назад</button>
+    <span class="atb-title">📥 Загрузки</span>
+    <span style="width:60px"></span>
+  </div>
+  <div class="br-panel-body">
+    <div style="font-size:12px;color:var(--dim);margin-bottom:10px;">Введите прямую ссылку на файл для скачивания:</div>
+    <div class="dl-url-form">
+      <input class="dl-url-input" id="dl-url-input" type="url" placeholder="https://example.com/file.zip">
+      <button class="btn-dl-add" onclick="addDownload()">↓ Скачать</button>
+    </div>
+    <div id="dl-list"></div>
+  </div>
+</div>
+
+<!-- BROWSER: SETTINGS PANEL -->
+<div class="br-panel" id="brp-brsettings">
+  <div class="atb">
+    <button class="btn-back" onclick="closeBrPanel('brsettings')">← Назад</button>
+    <span class="atb-title">⚙️ Настройки браузера</span>
+    <span style="width:60px"></span>
+  </div>
+  <div class="br-panel-body">
+    <div class="set-sect">Приватность</div>
+    <div class="set-group">
+      <div class="set-row" style="cursor:default">
+        <div><div class="bset-lbl">Блокировка трекеров</div><div class="bset-desc">Защита от слежки</div></div>
+        <div class="tog on" onclick="this.classList.toggle('on');toast('Блокировка: '+(this.classList.contains('on')?'ВКЛ':'ВЫКЛ'))"></div>
+      </div>
+      <div class="set-row" style="cursor:default">
+        <div><div class="bset-lbl">Приватный режим</div><div class="bset-desc">История не сохраняется</div></div>
+        <div class="tog" onclick="this.classList.toggle('on');toast('Приватный режим: '+(this.classList.contains('on')?'ВКЛ':'ВЫКЛ'))"></div>
+      </div>
+      <div class="set-row" onclick="clearBrHistory()">
+        <div><div class="bset-lbl">Очистить историю</div><div class="bset-desc">Удалить все посещения</div></div>
+        <span class="set-arrow">›</span>
+      </div>
+    </div>
+    <div class="set-sect">Внешний вид</div>
+    <div class="set-group">
+      <div class="set-row" style="cursor:default">
+        <div><div class="bset-lbl">Тёмная тема сайтов</div><div class="bset-desc">Принудительный Dark Mode</div></div>
+        <div class="tog on" onclick="this.classList.toggle('on')"></div>
+      </div>
+      <div class="set-row" style="cursor:default">
+        <div><div class="bset-lbl">Блокировка рекламы</div><div class="bset-desc">Убирать рекламу на сайтах</div></div>
+        <div class="tog on" onclick="this.classList.toggle('on');toast('AdBlock: '+(this.classList.contains('on')?'ВКЛ':'ВЫКЛ'))"></div>
+      </div>
+    </div>
+    <div class="set-sect">Поисковик</div>
+    <div class="set-group">
+      <div class="set-row" onclick="toast('Поисковик: DuckDuckGo')">
+        <div><div class="bset-lbl">Поисковик по умолчанию</div></div>
+        <span class="set-val">DuckDuckGo ›</span>
+      </div>
+      <div class="set-row" onclick="toast('User-Agent обновлён')">
+        <div><div class="bset-lbl">User-Agent</div><div class="bset-desc">KONA Browser 2.0</div></div>
+        <span class="set-arrow">›</span>
+      </div>
+    </div>
+    <div class="set-sect">О браузере</div>
+    <div class="set-group">
+      <div class="set-row" style="cursor:default">
+        <div class="bset-lbl">Версия</div>
+        <span class="set-val">KONA Browser 2.0.1</span>
+      </div>
+      <div class="set-row" style="cursor:default">
+        <div class="bset-lbl">Движок</div>
+        <span class="set-val">WebKit (HTML iframe)</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SETTINGS ===== -->
+<div class="scr" id="scr-settings">
+  <div class="atb">
+    <button class="btn-back" onclick="closeApp('settings')">← Назад</button>
+    <span class="atb-title">⚙️ Настройки</span>
+    <span style="width:60px"></span>
+  </div>
+  <div class="scr-body">
+    <!-- Profile card -->
+    <div style="background:var(--glass);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:14px;display:flex;align-items:center;gap:14px;">
+      <div style="width:54px;height:54px;border-radius:50%;background:rgba(99,102,241,.5);border:2px solid rgba(99,102,241,.7);display:flex;align-items:center;justify-content:center;font-size:26px;">👤</div>
+      <div>
+        <div style="font-size:16px;font-weight:900;" id="prof-name">Пользователь</div>
+        <div style="font-size:12px;color:var(--dim);">LiteOS аккаунт</div>
+      </div>
+    </div>
+
+    <div class="set-sect">Сеть</div>
+    <div class="set-group">
+      <div class="set-row" onclick="openSub('wifi')">
+        <div class="set-lft"><div class="set-ico" style="background:rgba(14,165,233,.4)">📶</div><span class="set-lbl">Wi-Fi</span></div>
+        <div style="display:flex;align-items:center;gap:8px;"><span class="set-val" id="wifi-status-val">Подключено</span><span class="set-arrow">›</span></div>
+      </div>
+      <div class="set-row" onclick="openSub('bt')">
+        <div class="set-lft"><div class="set-ico" style="background:rgba(59,130,246,.4)">🔵</div><span class="set-lbl">Bluetooth</span></div>
+        <div style="display:flex;align-items:center;gap:8px;"><span class="set-val" id="bt-status-val">Выкл</span><span class="set-arrow">›</span></div>
+      </div>
+      <div class="set-row" onclick="openSub('mobile')">
+        <div class="set-lft"><div class="set-ico" style="background:rgba(34,197,94,.4)">📡</div><span class="set-lbl">Мобильная сеть</span></div>
+        <div style="display:flex;align-items:center;gap:8px;"><span class="set-val">Fastweb</span><span class="set-arrow">›</span></div>
+      </div>
+      <div class="set-row" onclick="openSub('vpn')">
+        <div class="set-lft"><div class="set-ico" style="background:rgba(167,139,250,.4)">🔒</div><span class="set-lbl">VPN</span></div>
+        <div style="display:flex;align-items:center;gap:8px;"><span class="set-val">Не настроен</span><span class="set-arrow">›</span></div>
+      </div>
+    </div>
+
+    <div class="set-sect">Устройство</div>
+    <div class="set-group">
+      <div class="set-row" onclick="openSub('display')">
+        <div class="set-lft"><div class="set-ico" style="background:rgba(99,102,241,.4)">🖥</div><span class="set-lbl">Дисплей</span></div>
+        <span class="set-arrow">›</span>
+      </div>
+      <div class="set-row" onclick="openSub('sound')">
+        <div class="set-lft"><div class="set-ico" style="background:rgba(14,165,233,.4)">🔊</div><span class="set-lbl">Звук и вибрация</span></div>
+        <span class="set-arrow">›</span>
+      </div>
+      <div class="set-row" onclick="openSub('notif')">
+        <div class="set-lft"><div class="set-ico" style="background:rgba(234,179,8,.4)">🔔</div><span class="set-lbl">Уведомления</span></div>
+        <span class="set-arrow">›</span>
+      </div>
+      <div class="set-row" onclick="openSub('battery')">
+        <div class="set-lft"><div class="set-ico" style="background:rgba(74,222,128,.4)">🔋</div><span class="set-lbl">Аккумулятор</span></div>
+        <div style="display:flex;align-items:center;gap:8px;"><span class="set-val">87%</span><span class="set-arrow">›</span></div>
+      </div>
+      <div class="set-row" onclick="openSub('storage')">
+        <div class="set-lft"><div class="set-ico" style="background:rgba(251,191,36,.4)">💾</div><span class="set-lbl">Хранилище</span></div>
+        <div style="display:flex;align-items:center;gap:8px;"><span class="set-val">3.2 ГБ своб.</span><span class="set-arrow">›</span></div>
+      </div>
+    </div>
+
+    <div class="set-sect">Система</div>
+    <div class="set-group">
+      <div class="set-row" onclick="openSub('lang')">
+        <div class="set-lft"><div class="set-ico" style="background:rgba(99,102,241,.4)">🌐</div><span class="set-lbl">Язык и регион</span></div>
+        <div style="display:flex;align-items:center;gap:8px;"><span class="set-val">Русский</span><span class="set-arrow">›</span></div>
+      </div>
+      <div class="set-row" onclick="openSub('privacy')">
+        <div class="set-lft"><div class="set-ico" style="background:rgba(248,113,113,.4)">🔒</div><span class="set-lbl">Конфиденциальность</span></div>
+        <span class="set-arrow">›</span>
+      </div>
+      <div class="set-row" onclick="openSub('update')">
+        <div class="set-lft"><div class="set-ico" style="background:rgba(14,165,233,.4)">🔄</div><span class="set-lbl">Обновление системы</span></div>
+        <div style="display:flex;align-items:center;gap:8px;"><span class="set-val">LiteOS 3.0</span><span class="set-arrow">›</span></div>
+      </div>
+    </div>
+
+    <div class="set-sect">О системе</div>
+    <div class="set-group">
+      <div class="set-row" onclick="tapVer()">
+        <div class="set-lft"><div class="set-ico" style="background:rgba(167,139,250,.4)">ℹ️</div><span class="set-lbl">Версия LiteOS</span></div>
+        <span class="set-val" id="ver-disp">2.0.0</span>
+      </div>
+      <div class="set-row" style="cursor:default">
+        <div class="set-lft"><div class="set-ico" style="background:rgba(34,197,94,.4)">🏢</div><span class="set-lbl">Разработчик</span></div>
+        <span class="set-val">KONA Tech</span>
+      </div>
+      <div class="set-row" id="devrow" style="display:none" onclick="openDev()">
+        <div class="set-lft"><div class="set-ico" style="background:rgba(251,191,36,.4)">🛠</div><span class="set-lbl">Режим разработчика</span></div>
+        <span class="set-arrow">›</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SETTINGS SUB-SCREENS ===== -->
+
+<!-- WIFI -->
+<div class="subscr" id="sub-wifi">
+  <div class="atb"><button class="btn-back" onclick="closeSub('wifi')">← Назад</button><span class="atb-title">📶 Wi-Fi</span><span style="width:60px"></span></div>
+  <div class="scr-body">
+    <div class="set-group" style="margin-bottom:14px;">
+      <div class="set-row" style="cursor:default">
+        <div class="set-lft"><span class="set-lbl">Wi-Fi</span></div>
+        <div class="tog on" id="wifi-master-tog" onclick="toggleWifi(this)"></div>
+      </div>
+    </div>
+    <div id="wifi-networks-wrap">
+      <div class="set-sect">Доступные сети</div>
+      <div id="wifi-networks"></div>
+    </div>
+  </div>
+</div>
+
+<!-- BLUETOOTH -->
+<div class="subscr" id="sub-bt">
+  <div class="atb"><button class="btn-back" onclick="closeSub('bt')">← Назад</button><span class="atb-title">🔵 Bluetooth</span><span style="width:60px"></span></div>
+  <div class="scr-body">
+    <div class="set-group" style="margin-bottom:14px;">
+      <div class="set-row" style="cursor:default">
+        <div class="set-lft"><span class="set-lbl">Bluetooth</span></div>
+        <div class="tog" id="bt-master-tog" onclick="toggleBt(this)"></div>
+      </div>
+    </div>
+    <div id="bt-devices-wrap" style="display:none">
+      <div class="set-sect">Доступные устройства</div>
+      <div class="set-group">
+        <div class="set-row" onclick="btConnect('Samsung Galaxy Buds')"><div class="set-lft"><div class="set-ico">🎧</div><span class="set-lbl">Samsung Galaxy Buds</span></div><span class="set-val">Доступно</span></div>
+        <div class="set-row" onclick="btConnect('JBL Speaker')"><div class="set-lft"><div class="set-ico">🔊</div><span class="set-lbl">JBL Speaker</span></div><span class="set-val">Доступно</span></div>
+        <div class="set-row" onclick="btConnect('Клавиатура BT')"><div class="set-lft"><div class="set-ico">⌨️</div><span class="set-lbl">Клавиатура BT</span></div><span class="set-val">Доступно</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DISPLAY -->
+<div class="subscr" id="sub-display">
+  <div class="atb"><button class="btn-back" onclick="closeSub('display')">← Назад</button><span class="atb-title">🖥 Дисплей</span><span style="width:60px"></span></div>
+  <div class="scr-body">
+    <div class="set-sect">Яркость</div>
+    <div class="set-group">
+      <div class="set-slider-row">
+        <div class="set-slider-label"><div class="set-ico" style="background:rgba(251,191,36,.4)">☀️</div><span class="set-lbl">Яркость</span></div>
+        <input type="range" min="10" max="100" value="80" oninput="toast('Яркость: '+this.value+'%')">
+      </div>
+    </div>
+    <div class="set-sect">Тема</div>
+    <div class="set-group">
+      <div class="set-row" style="cursor:default"><div class="set-lft"><div class="set-ico" style="background:rgba(30,30,60,.6)">🌙</div><span class="set-lbl">Тёмный режим</span></div><div class="tog on" onclick="this.classList.toggle('on');toast('Тёмный режим: '+(this.classList.contains('on')?'ВКЛ':'ВЫКЛ'))"></div></div>
+      <div class="set-row" onclick="toast('Размер шрифта изменён')"><div class="set-lft"><div class="set-ico" style="background:rgba(99,102,241,.4)">🔤</div><span class="set-lbl">Размер шрифта</span></div><span class="set-val">Средний ›</span></div>
+      <div class="set-row" style="cursor:default"><div class="set-lft"><div class="set-ico" style="background:rgba(167,139,250,.4)">✨</div><span class="set-lbl">Анимации</span></div><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+    </div>
+    <div class="set-sect">Сон</div>
+    <div class="set-group">
+      <div class="set-row" onclick="toast('Тайм-аут: 30 сек')"><div class="set-lft"><div class="set-ico" style="background:rgba(14,165,233,.4)">⏱</div><span class="set-lbl">Отключение экрана</span></div><span class="set-val">30 сек ›</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- SOUND -->
+<div class="subscr" id="sub-sound">
+  <div class="atb"><button class="btn-back" onclick="closeSub('sound')">← Назад</button><span class="atb-title">🔊 Звук</span><span style="width:60px"></span></div>
+  <div class="scr-body">
+    <div class="set-sect">Громкость</div>
+    <div class="set-group">
+      <div class="set-slider-row"><div class="set-slider-label"><div class="set-ico" style="background:rgba(14,165,233,.4)">🎵</div><span class="set-lbl">Медиа</span></div><input type="range" min="0" max="100" value="70" oninput="toast('Медиа: '+this.value+'%')"></div>
+      <div class="set-slider-row"><div class="set-slider-label"><div class="set-ico" style="background:rgba(234,179,8,.4)">🔔</div><span class="set-lbl">Звонок</span></div><input type="range" min="0" max="100" value="80" oninput="toast('Звонок: '+this.value+'%')"></div>
+      <div class="set-slider-row"><div class="set-slider-label"><div class="set-ico" style="background:rgba(167,139,250,.4)">🔕</div><span class="set-lbl">Уведомления</span></div><input type="range" min="0" max="100" value="60" oninput="toast('Уведомления: '+this.value+'%')"></div>
+    </div>
+    <div class="set-sect">Режим</div>
+    <div class="set-group">
+      <div class="set-row" style="cursor:default"><div class="set-lft"><div class="set-ico" style="background:rgba(239,68,68,.4)">🔇</div><span class="set-lbl">Без звука</span></div><div class="tog" onclick="this.classList.toggle('on');toast('Без звука: '+(this.classList.contains('on')?'ВКЛ':'ВЫКЛ'))"></div></div>
+      <div class="set-row" style="cursor:default"><div class="set-lft"><div class="set-ico" style="background:rgba(59,130,246,.4)">📳</div><span class="set-lbl">Вибрация</span></div><div class="tog on" onclick="this.classList.toggle('on');toast('Вибрация: '+(this.classList.contains('on')?'ВКЛ':'ВЫКЛ'))"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- NOTIFICATIONS -->
+<div class="subscr" id="sub-notif">
+  <div class="atb"><button class="btn-back" onclick="closeSub('notif')">← Назад</button><span class="atb-title">🔔 Уведомления</span><span style="width:60px"></span></div>
+  <div class="scr-body">
+    <div class="set-sect">Глобально</div>
+    <div class="set-group">
+      <div class="set-row" style="cursor:default"><div class="set-lft"><div class="set-ico" style="background:rgba(234,179,8,.4)">🔔</div><span class="set-lbl">Все уведомления</span></div><div class="tog on" onclick="this.classList.toggle('on');toast('Уведомления: '+(this.classList.contains('on')?'ВКЛ':'ВЫКЛ'))"></div></div>
+      <div class="set-row" style="cursor:default"><div class="set-lft"><div class="set-ico" style="background:rgba(99,102,241,.4)">🌙</div><span class="set-lbl">Не беспокоить</span></div><div class="tog" onclick="this.classList.toggle('on');toast('Не беспокоить: '+(this.classList.contains('on')?'ВКЛ':'ВЫКЛ'))"></div></div>
+    </div>
+    <div class="set-sect">Приложения</div>
+    <div class="set-group">
+      <div class="set-row" style="cursor:default"><div class="set-lft"><div class="set-ico" style="background:rgba(34,197,94,.4)">🛒</div><span class="set-lbl">Lite Store</span></div><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+      <div class="set-row" style="cursor:default"><div class="set-lft"><div class="set-ico" style="background:rgba(14,165,233,.4)">🌐</div><span class="set-lbl">KONA Browser</span></div><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+      <div class="set-row" style="cursor:default"><div class="set-lft"><div class="set-ico" style="background:rgba(248,113,113,.4)">📺</div><span class="set-lbl">YouTube</span></div><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+      <div class="set-row" style="cursor:default"><div class="set-lft"><div class="set-ico" style="background:rgba(56,189,248,.4)">✉️</div><span class="set-lbl">Почта</span></div><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- BATTERY -->
+<div class="subscr" id="sub-battery">
+  <div class="atb"><button class="btn-back" onclick="closeSub('battery')">← Назад</button><span class="atb-title">🔋 Аккумулятор</span><span style="width:60px"></span></div>
+  <div class="scr-body">
+    <div style="background:var(--glass);border:1px solid var(--border);border-radius:18px;padding:20px;text-align:center;margin-bottom:14px;">
+      <div style="font-size:48px;font-weight:800;color:#4ade80;">87%</div>
+      <div style="font-size:13px;color:var(--dim);">Зарядка не подключена</div>
+      <div style="height:8px;background:rgba(255,255,255,.1);border-radius:4px;margin-top:14px;overflow:hidden;"><div style="height:100%;width:87%;background:linear-gradient(90deg,#4ade80,#22c55e);border-radius:4px;"></div></div>
+    </div>
+    <div class="set-group">
+      <div class="set-row" style="cursor:default"><div class="set-lft"><div class="set-ico" style="background:rgba(251,191,36,.4)">⚡</div><span class="set-lbl">Режим экономии</span></div><div class="tog" onclick="this.classList.toggle('on');toast('Режим экономии: '+(this.classList.contains('on')?'ВКЛ':'ВЫКЛ'))"></div></div>
+      <div class="set-row" style="cursor:default"><div class="set-lft"><div class="set-ico" style="background:rgba(74,222,128,.4)">🔌</div><span class="set-lbl">Адаптивная зарядка</span></div><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- MOBILE -->
+<div class="subscr" id="sub-mobile">
+  <div class="atb"><button class="btn-back" onclick="closeSub('mobile')">← Назад</button><span class="atb-title">📡 Мобильная сеть</span><span style="width:60px"></span></div>
+  <div class="scr-body">
+    <div class="set-group">
+      <div class="set-row" style="cursor:default"><div class="set-lft"><span class="set-lbl">Мобильные данные</span></div><div class="tog on" onclick="this.classList.toggle('on');toast('Мобильные данные: '+(this.classList.contains('on')?'ВКЛ':'ВЫКЛ'))"></div></div>
+      <div class="set-row" style="cursor:default"><div class="set-lft"><span class="set-lbl">Роуминг</span></div><div class="tog" onclick="this.classList.toggle('on');toast('Роуминг: '+(this.classList.contains('on')?'ВКЛ':'ВЫКЛ'))"></div></div>
+    </div>
+    <div class="set-sect">Оператор</div>
+    <div class="set-group">
+      <div class="set-row" style="cursor:default"><div class="set-lft"><span class="set-lbl">Сеть</span></div><span class="set-val">Fastweb IT</span></div>
+      <div class="set-row" style="cursor:default"><div class="set-lft"><span class="set-lbl">Тип сети</span></div><span class="set-val">4G LTE</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- VPN -->
+<div class="subscr" id="sub-vpn">
+  <div class="atb"><button class="btn-back" onclick="closeSub('vpn')">← Назад</button><span class="atb-title">🔒 VPN</span><span style="width:60px"></span></div>
+  <div class="scr-body">
+    <div class="set-group" style="margin-bottom:14px;"><div class="set-row" style="cursor:default"><div class="set-lft"><span class="set-lbl">VPN</span></div><div class="tog" onclick="this.classList.toggle('on');toast('VPN: '+(this.classList.contains('on')?'ВКЛ':'ВЫКЛ'))"></div></div></div>
+    <div style="text-align:center;padding:30px;color:var(--dim);font-size:13px;">VPN не настроен.<br>Добавьте конфигурацию.</div>
+    <button style="width:100%;background:rgba(56,189,248,.25);border:1px solid rgba(56,189,248,.45);color:#7dd3fc;padding:13px;border-radius:14px;font-size:14px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;" onclick="toast('Добавление VPN...')">+ Добавить VPN</button>
+  </div>
+</div>
+
+<!-- STORAGE -->
+<div class="subscr" id="sub-storage">
+  <div class="atb"><button class="btn-back" onclick="closeSub('storage')">← Назад</button><span class="atb-title">💾 Хранилище</span><span style="width:60px"></span></div>
+  <div class="scr-body">
+    <div style="background:var(--glass);border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px;"><span style="font-size:13px;font-weight:800;">Использовано</span><span style="font-size:13px;color:var(--dim);">4.8 ГБ / 8 ГБ</span></div>
+      <div style="height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;">
+        <div style="height:100%;width:60%;background:linear-gradient(90deg,var(--accent),var(--purple));border-radius:4px;"></div>
+      </div>
+    </div>
+    <div class="set-group">
+      <div class="set-row" style="cursor:default"><div class="set-lft"><div class="set-ico" style="background:rgba(14,165,233,.4)">📱</div><span class="set-lbl">Приложения</span></div><span class="set-val">1.2 ГБ</span></div>
+      <div class="set-row" style="cursor:default"><div class="set-lft"><div class="set-ico" style="background:rgba(99,102,241,.4)">📥</div><span class="set-lbl">Загрузки</span></div><span class="set-val">340 МБ</span></div>
+      <div class="set-row" style="cursor:default"><div class="set-lft"><div class="set-ico" style="background:rgba(167,139,250,.4)">🖼</div><span class="set-lbl">Медиа</span></div><span class="set-val">3.1 ГБ</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- LANG -->
+<div class="subscr" id="sub-lang">
+  <div class="atb"><button class="btn-back" onclick="closeSub('lang')">← Назад</button><span class="atb-title">🌐 Язык</span><span style="width:60px"></span></div>
+  <div class="scr-body">
+    <div class="set-group">
+      <div class="set-row" onclick="toast('Язык: Русский')"><div class="set-lft"><span class="set-lbl">🇷🇺 Русский</span></div><span style="color:#4ade80;">✓</span></div>
+      <div class="set-row" onclick="toast('Язык: Italiano')"><div class="set-lft"><span class="set-lbl">🇮🇹 Italiano</span></div><span class="set-arrow">›</span></div>
+      <div class="set-row" onclick="toast('Язык: English')"><div class="set-lft"><span class="set-lbl">🇬🇧 English</span></div><span class="set-arrow">›</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- PRIVACY -->
+<div class="subscr" id="sub-privacy">
+  <div class="atb"><button class="btn-back" onclick="closeSub('privacy')">← Назад</button><span class="atb-title">🔒 Конфиденциальность</span><span style="width:60px"></span></div>
+  <div class="scr-body">
+    <div class="set-group">
+      <div class="set-row" style="cursor:default"><div class="set-lft"><span class="set-lbl">Геолокация</span></div><div class="tog on" onclick="this.classList.toggle('on');toast('Геолокация: '+(this.classList.contains('on')?'ВКЛ':'ВЫКЛ'))"></div></div>
+      <div class="set-row" style="cursor:default"><div class="set-lft"><span class="set-lbl">Реклама</span></div><div class="tog" onclick="this.classList.toggle('on')"></div></div>
+      <div class="set-row" onclick="toast('Данные очищены')"><div class="set-lft"><span class="set-lbl">Очистить данные приложений</span></div><span class="set-arrow">›</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- UPDATE -->
+<div class="subscr" id="sub-update">
+  <div class="atb"><button class="btn-back" onclick="closeSub('update')">← Назад</button><span class="atb-title">🔄 Обновление</span><span style="width:60px"></span></div>
+  <div class="scr-body">
+    <div style="background:rgba(74,222,128,.15);border:1px solid rgba(74,222,128,.3);border-radius:16px;padding:18px;text-align:center;margin-bottom:14px;">
+      <div style="font-size:26px;margin-bottom:8px;">✅</div>
+      <div style="font-size:15px;font-weight:800;">Система обновлена</div>
+      <div style="font-size:12px;color:var(--dim);margin-top:4px;">LiteOS 3.0.0 — последняя версия</div>
+    </div>
+    <div class="set-group">
+      <div class="set-row" style="cursor:default"><div class="set-lft"><span class="set-lbl">Автообновление</span></div><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+      <div class="set-row" onclick="toast('Проверка обновлений...')"><div class="set-lft"><span class="set-lbl">Проверить обновления</span></div><span class="set-arrow">›</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== YOUTUBE APP ===== -->
+<div class="scr" id="scr-youtube">
+  <div class="atb">
+    <button class="btn-back" onclick="closeApp('youtube')">← Назад</button>
+    <span class="atb-title">📺 YouTube</span>
+    <span style="width:60px"></span>
+  </div>
+  <div class="scr-body">
+    <div id="yt-search">
+      <input id="yt-url" type="text" placeholder="Ссылка на YouTube видео или ID..." onkeydown="if(event.key==='Enter')ytLoad()">
+      <button class="btn-yt-go" onclick="ytLoad()">▶</button>
+    </div>
+    <iframe id="yt-player" class="yt-player" src="" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+    <div style="font-size:13px;font-weight:800;margin-bottom:10px;color:var(--dim)">Популярное</div>
+    <div class="yt-suggestions" id="yt-suggest"></div>
+  </div>
+</div>
+
+<!-- ===== MAIL APP ===== -->
+<div class="scr" id="scr-mail">
+  <div class="atb">
+    <button class="btn-back" onclick="mailBack()">← Назад</button>
+    <span class="atb-title" id="mail-title">✉️ Почта</span>
+    <button class="btn-back" onclick="openCompose()" id="mail-compose-btn" style="display:none">✏️</button>
+  </div>
+  <div class="scr-body" id="mail-body">
+    <!-- login or inbox loaded by JS -->
+  </div>
+</div>
+
+<!-- COMPOSE -->
+<div class="compose-wrap" id="compose-wrap">
+  <div class="compose-hd">
+    <span class="compose-title">✏️ Новое письмо</span>
+    <button class="btn-back" onclick="closeCompose()">✕</button>
+  </div>
+  <div class="compose-body">
+    <input class="cinput" id="compose-to" type="email" placeholder="Кому: email@example.com">
+    <input class="cinput" id="compose-subj" type="text" placeholder="Тема">
+    <textarea id="compose-text" placeholder="Текст письма..."></textarea>
+  </div>
+  <div class="compose-footer">
+    <span style="font-size:12px;color:var(--dim)">LiteMail by KONA</span>
+    <button class="btn-send" onclick="sendMail()">📤 Отправить</button>
+  </div>
+</div>
+
+<!-- ===== DEVELOPER MODE ===== -->
+<div id="dev">
+  <div id="dev-top">
+    <span style="font-size:13px;font-weight:800;color:#58a6ff;">🛠 DEVELOPER MODE</span>
+    <button class="btn-back" onclick="closeDev()">✕ Выйти</button>
+  </div>
+  <div id="dev-tabs">
+    <div class="dtab on" onclick="devTab('terminal',this)">Terminal</div>
+    <div class="dtab" onclick="devTab('options',this)">Options</div>
+    <div class="dtab" onclick="devTab('firmware',this)">Firmware</div>
+  </div>
+  <div id="dev-body">
+    <div class="dpanel on" id="dp-terminal">
+      <div id="term-out"></div>
+      <div id="term-in-row">
+        <input id="term-in" placeholder="Введите команду..." onkeydown="if(event.key==='Enter')runCmd()" autocomplete="off" spellcheck="false">
+        <button class="btn-run" onclick="runCmd()">▶</button>
+      </div>
+    </div>
+    <div class="dpanel" id="dp-options">
+      <div class="dev-opt"><div><div class="dev-opt-lbl">USB Debugging</div><div class="dev-opt-desc">Отладка через USB</div></div><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+      <div class="dev-opt"><div><div class="dev-opt-lbl">Touch points</div><div class="dev-opt-desc">Показывать точки касания</div></div><div class="tog" onclick="togTouch(this)"></div></div>
+      <div class="dev-opt"><div><div class="dev-opt-lbl">FPS счётчик</div><div class="dev-opt-desc">Показывать кадров/сек</div></div><div class="tog" onclick="togFps(this)"></div></div>
+      <div class="dev-opt"><div><div class="dev-opt-lbl">Verbose logging</div><div class="dev-opt-desc">Все события в логах</div></div><div class="tog" onclick="this.classList.toggle('on')"></div></div>
+    </div>
+    <div class="dpanel" id="dp-firmware">
+      <div style="font-size:13px;color:#8b949e;margin-bottom:12px;">Текущая: <span id="fw-cur" style="color:#58a6ff;font-weight:800;">2.0.0 — Stable</span></div>
+      <div id="fw-list">
+        <div class="fw-item"><div><div class="fw-name">LiteOS Stable</div><div class="fw-ver">2.0.0</div></div><button class="btn-flash inst">Installed</button></div>
+        <div class="fw-item"><div><div class="fw-name">LiteOS Beta</div><div class="fw-ver">2.1.0-beta</div></div><button class="btn-flash" onclick="flashFw(this,'2.1.0-beta','Beta')">Flash</button></div>
+        <div class="fw-item"><div><div class="fw-name">LiteOS Dev</div><div class="fw-ver">2.2.0-dev</div></div><button class="btn-flash" onclick="flashFw(this,'2.2.0-dev','Dev Preview')">Flash</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAYS -->
+<div id="toast"></div>
+<div id="fps-el"></div>
+<div id="tdot"></div>
+
+<script>
+// ==================== STATE ====================
+const STATE = {
+  currentApp: null,
+  recents: [],
+  devEnabled: false,
+  vTaps: 0, vTimer: null,
+  wifi: true, bt: false,
+  connectedWifi: 'Fastweb-5G',
+  connectedBt: null,
+  fpsRaf: null,
+  currentFw: '2.0.0',
+  brTabs: [{id:0,title:'New Tab',url:''}],
+  activeTab: 0, tabCtr: 1,
+  accounts: JSON.parse(localStorage.getItem('liteos_accounts')||'[]'),
+  activeAccount: JSON.parse(localStorage.getItem('liteos_active_acc')||'null'),
+  downloads: JSON.parse(localStorage.getItem('liteos_downloads')||'[]'),
+  mailAccount: JSON.parse(localStorage.getItem('liteos_mail')||'null'),
+  mailMessages: [],
+  installedApps: JSON.parse(localStorage.getItem('liteos_apps')||'["store","browser","settings","youtube","mail"]'),
+};
+
+// ==================== CLOCK ====================
+function pad(x){return('0'+x).slice(-2);}
+function tick(){
+  var n=new Date();
+  var t=pad(n.getHours())+':'+pad(n.getMinutes());
+  var e1=document.getElementById('sb-time');
+  var e2=document.getElementById('lk-time');
+  var e3=document.getElementById('lk-date');
+  if(e1)e1.textContent=t;
+  if(e2)e2.textContent=t;
+  if(e3){
+    var D=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+    var M=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+    e3.textContent=D[n.getDay()]+' '+n.getDate()+' '+M[n.getMonth()];
+  }
+}
+tick();
+setInterval(tick,1000);
+
+// ==================== TOAST ====================
+let toastTimer;
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),2500);
+}
+
+// ==================== APP META ====================
+const APP_META = {
+  store:    {icon:'🛒',name:'Lite Store',color:'rgba(34,197,94,.4)'},
+  browser:  {icon:'🌐',name:'KONA Browser',color:'rgba(14,165,233,.4)'},
+  settings: {icon:'⚙️',name:'Настройки',color:'rgba(100,116,139,.4)'},
+  youtube:  {icon:'📺',name:'YouTube',color:'rgba(239,68,68,.4)'},
+  mail:     {icon:'✉️',name:'Почта',color:'rgba(56,189,248,.4)'},
+  calculator:{icon:'🧮',name:'Калькулятор',color:'rgba(99,102,241,.4)'},
+  notes:    {icon:'📝',name:'Заметки',color:'rgba(251,191,36,.4)'},
+  camera:   {icon:'📷',name:'Камера',color:'rgba(74,222,128,.4)'},
+  music:    {icon:'🎵',name:'Музыка',color:'rgba(167,139,250,.4)'},
+  calendar2:{icon:'📅',name:'Календарь',color:'rgba(14,165,233,.4)'},
+  weather:  {icon:'🌤',name:'Погода',color:'rgba(56,189,248,.4)'},
+  maps:     {icon:'🗺',name:'Карты',color:'rgba(34,197,94,.4)'},
+  games:    {icon:'🎮',name:'LiteGames',color:'rgba(248,113,113,.4)'},
+  gallery:  {icon:'🖼',name:'Галерея',color:'rgba(167,139,250,.4)'},
+  snake:    {icon:'🐍',name:'Змейка',color:'rgba(34,197,94,.4)'},
+  ttt:      {icon:'⭕',name:'Крестики-нолики',color:'rgba(251,191,36,.4)'},
+  g2048:    {icon:'🔢',name:'2048',color:'rgba(249,115,22,.4)'},
+  clock:    {icon:'⏰',name:'Часы',color:'rgba(56,189,248,.4)'},
+  telegram: {icon:'✈️',name:'Telegram',color:'rgba(14,165,233,.4)'},
+  vk:       {icon:'💬',name:'VK',color:'rgba(59,130,246,.4)'},
+  maps:     {icon:'🗺',name:'Карты',color:'rgba(34,197,94,.4)'},
+};
+
+// ==================== DESKTOP GRID ====================
+function renderGrid(){
+  const g=document.getElementById('grid');
+  g.innerHTML='';
+  STATE.installedApps.forEach(id=>{
+    const m=APP_META[id]; if(!m) return;
+    const el=document.createElement('div');
+    el.className='aico';
+    el.innerHTML=`<div class="aico-wrap" style="background:${m.color}">${m.icon}</div><span class="aico-label">${m.name}</span>`;
+    el.onclick=()=>openApp(id);
+    g.appendChild(el);
+  });
+}
+renderGrid();
+
+// ==================== OPEN/CLOSE APP ====================
+function openApp(name){
+  closeRec();
+  STATE.currentApp=name;
+  const el=document.getElementById('scr-'+name);
+  if(!el){
+    if(name==='calculator') openCalculator();
+    else if(name==='notes') openNotes();
+    else if(name==='snake'){openSnake();return;}
+    else if(name==='ttt'){openTTT();return;}
+    else if(name==='g2048'){open2048();return;}
+    else if(name==='clock'){openClock();return;}
+    else if(name==='telegram'){window.open('https://web.telegram.org','_blank');toast('Открываю Telegram...');}
+    else if(name==='vk'){window.open('https://vk.com','_blank');toast('Открываю VK...');}
+    else if(name==='maps'){window.open('https://www.openstreetmap.org','_blank');toast('Открываю Карты...');}
+    else if(name==='camera'){openCamera();return;}
+    else if(name==='music'){openMusic();return;}
+    else if(name==='calendar2'){openCalendar();return;}
+    else if(name==='gallery'){openGallery();return;}
+    else if(name==='games'||name==='litegames'){openGamesMenu();return;}
+    else if(name==='weather'){openWeatherApp();return;}
+    else if(name==='youtube'){window.open('https://youtube.com','_blank');toast('Открываю YouTube...');return;}
+    else toast('Приложение открывается...');
+    return;
+  }
+  el.classList.add('open');
+  addRec(name);
+  // App init
+  if(name==='store') renderStore('all');
+  if(name==='mail') initMail();
+  if(name==='youtube'){closeApp('youtube');window.open('https://youtube.com','_blank');toast('Открываю YouTube...');}
+  if(name==='browser') brRenderTabs();
+}
+function closeApp(name){
+  const el=document.getElementById('scr-'+name);
+  if(!el) return;
+  el.style.animation='appclose .2s ease forwards';
+  setTimeout(()=>{el.classList.remove('open');el.style.animation='';},200);
+  STATE.currentApp=null;
+  if(name==='browser') closeBrMenu();
+}
+
+// ==================== NAV ====================
+function goHome(){
+  closeRec();
+  if(STATE.currentApp) closeApp(STATE.currentApp);
+  if(document.getElementById('dev').classList.contains('open')) closeDev();
+  // close all sub screens
+  document.querySelectorAll('.subscr.open').forEach(s=>s.classList.remove('open'));
+  document.querySelectorAll('.br-panel.open').forEach(p=>p.classList.remove('open'));
+}
+function goBack(){
+  // dev
+  if(document.getElementById('dev').classList.contains('open')){closeDev();return;}
+  // br panels
+  const brp=document.querySelector('.br-panel.open');
+  if(brp){brp.classList.remove('open');return;}
+  // sub screens
+  const sub=document.querySelector('.subscr.open');
+  if(sub){sub.classList.remove('open');return;}
+  // compose
+  if(document.getElementById('compose-wrap').classList.contains('open')){closeCompose();return;}
+  // recents
+  if(document.getElementById('rec').classList.contains('open')){closeRec();return;}
+  // current app
+  if(STATE.currentApp){closeApp(STATE.currentApp);return;}
+}
+
+// ==================== RECENTS ====================
+function addRec(name){
+  STATE.recents=STATE.recents.filter(r=>r!==name);
+  STATE.recents.unshift(name);
+  if(STATE.recents.length>6) STATE.recents.pop();
+  renderRec();
+}
+function renderRec(){
+  const wrap=document.getElementById('rec-scroll');
+  wrap.innerHTML='';
+  if(!STATE.recents.length){
+    wrap.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.35);font-size:13px;padding:40px 0;width:100%">Нет недавних приложений</div>';
+    return;
+  }
+  STATE.recents.forEach(n=>{
+    const m=APP_META[n];if(!m)return;
+    const c=document.createElement('div');
+    c.className='rc';
+    c.innerHTML=`<div class="rc-x" onclick="removeRec('${n}',event)">✕</div><div class="rc-hd">${m.icon} ${m.name}</div><div class="rc-prev">${m.icon}</div>`;
+    c.onclick=()=>{closeRec();openApp(n);};
+    wrap.appendChild(c);
+  });
+}
+function removeRec(n,e){e.stopPropagation();STATE.recents=STATE.recents.filter(r=>r!==n);renderRec();}
+function clearRec(){STATE.recents=[];renderRec();closeRec();toast('История очищена');}
+function toggleRec(){document.getElementById('rec').classList.toggle('open');}
+function closeRec(){document.getElementById('rec').classList.remove('open');}
+
+// ==================== LITE STORE ====================
+const STORE_APPS = [
+  {id:'youtube', cat:'media', name:'YouTube', desc:'Видеосервис YouTube', size:'встроено', icon:'📺'},
+  {id:'mail',    cat:'util', name:'Почта LiteMail', desc:'Почтовый клиент', size:'встроено', icon:'✉️'},
+  {id:'calculator',cat:'util',name:'Калькулятор',desc:'Простой калькулятор',size:'120 КБ',icon:'🧮'},
+  {id:'notes',   cat:'util', name:'Заметки', desc:'Записная книжка', size:'85 КБ', icon:'📝'},
+  {id:'camera',  cat:'media',name:'Камера', desc:'Фото и видео', size:'2.1 МБ', icon:'📷'},
+  {id:'music',   cat:'media',name:'LiteMusic', desc:'Музыкальный плеер', size:'3.4 МБ', icon:'🎵'},
+  {id:'calendar2',cat:'util',name:'Календарь',desc:'Планировщик', size:'1.2 МБ', icon:'📅'},
+  {id:'weather', cat:'util', name:'Погода', desc:'Прогноз погоды', size:'890 КБ', icon:'🌤'},
+  {id:'maps',    cat:'util', name:'Карты', desc:'Навигация', size:'4.8 МБ', icon:'🗺'},
+  {id:'snake',    cat:'games',name:'Змейка',        desc:'Классическая змейка',      size:'0.3 МБ', icon:'🐍'},
+  {id:'ttt',      cat:'games',name:'Крестики-нолики',desc:'Игра с другом или ИИ',     size:'0.2 МБ', icon:'⭕'},
+  {id:'g2048',    cat:'games',name:'2048',           desc:'Сложи плитки до 2048',     size:'0.3 МБ', icon:'🔢'},
+  {id:'clock',    cat:'util', name:'Часы',           desc:'Время, таймер, будильник',  size:'0.4 МБ', icon:'⏰'},
+  {id:'telegram', cat:'social',name:'Telegram',      desc:'Открывает web.telegram.org',size:'0.1 МБ', icon:'✈️'},
+  {id:'vk',       cat:'social',name:'VK',            desc:'Открывает vk.com',          size:'0.1 МБ', icon:'💬'},
+  {id:'maps',     cat:'util', name:'Карты',          desc:'Открывает OpenStreetMap',   size:'0.1 МБ', icon:'🗺'},
+  {id:'gallery',  cat:'media',name:'Галерея',        desc:'Просмотр фото',             size:'1.8 МБ', icon:'🖼'},
+];
+let storeCat='all';
+function storeTab(cat,el){
+  storeCat=cat;
+  document.querySelectorAll('.stab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  renderStore(cat);
+}
+function renderStore(cat){
+  const list=document.getElementById('store-list');
+  list.innerHTML='';
+  const filtered=cat==='all'?STORE_APPS:STORE_APPS.filter(a=>a.cat===cat);
+  filtered.forEach(app=>{
+    const inst=STATE.installedApps.includes(app.id);
+    const el=document.createElement('div');
+    el.className='store-item';
+    el.innerHTML=`
+      <div class="si-ico">${app.icon}</div>
+      <div class="si-info">
+        <div class="si-name">${app.name}</div>
+        <div class="si-desc">${app.desc}</div>
+        <div class="si-size">${app.size}</div>
+        <div class="install-bar" id="ibar-${app.id}"><div class="install-progress" id="iprog-${app.id}"></div></div>
+      </div>
+      <button class="btn-get ${inst?'installed':''}" id="ibtn-${app.id}" onclick="installApp('${app.id}',this)">${inst?'✓ Установлено':'Скачать'}</button>
+    `;
+    list.appendChild(el);
+  });
+}
+function installApp(id,btn){
+  if(STATE.installedApps.includes(id)){
+    toast('Уже установлено');
+    return;
+  }
+  btn.textContent='Загрузка...';
+  btn.className='btn-get loading';
+  const bar=document.getElementById('ibar-'+id);
+  const prog=document.getElementById('iprog-'+id);
+  bar.style.display='block';
+  let pct=0;
+  const iv=setInterval(()=>{
+    pct+=Math.random()*12+4;
+    if(pct>=100){pct=100;clearInterval(iv);}
+    prog.style.width=pct+'%';
+    if(pct>=100){
+      setTimeout(()=>{
+        STATE.installedApps.push(id);
+        localStorage.setItem('liteos_apps',JSON.stringify(STATE.installedApps));
+        btn.textContent='✓ Установлено';
+        btn.className='btn-get installed';
+        bar.style.display='none';
+        toast(`✅ ${APP_META[id]?.name||id} установлено!`);
+        renderGrid();
+      },200);
+    }
+  },80);
+}
+
+// ==================== BROWSER ====================
+function brRenderTabs(){
+  const row=document.getElementById('br-tabs');
+  row.innerHTML='';
+  STATE.brTabs.forEach(t=>{
+    const el=document.createElement('div');
+    el.className='btab'+(t.id===STATE.activeTab?' active':'');
+    el.innerHTML=`<span>${t.title}</span><span class="bx" onclick="brCloseTab(${t.id},event)">✕</span>`;
+    el.onclick=()=>brSwitchTab(t.id);
+    row.appendChild(el);
+  });
+  const add=document.createElement('button');
+  add.className='btn-addtab';add.textContent='+';add.onclick=brAddTab;
+  row.appendChild(add);
+}
+function brSwitchTab(id){
+  STATE.activeTab=id;
+  const t=STATE.brTabs.find(t=>t.id===id);
+  if(t&&t.url){document.getElementById('br-url').value=t.url;brLoadIframe(t.url);}
+  else brShowHome();
+  brRenderTabs();
+}
+function brAddTab(){
+  const id=STATE.tabCtr++;
+  STATE.brTabs.push({id,title:'Новая вкладка',url:''});
+  STATE.activeTab=id;brShowHome();brRenderTabs();
+}
+function brCloseTab(id,e){
+  e.stopPropagation();
+  if(STATE.brTabs.length===1){toast("Нельзя закрыть последнюю вкладку");return;}
+  STATE.brTabs=STATE.brTabs.filter(t=>t.id!==id);
+  if(STATE.activeTab===id) STATE.activeTab=STATE.brTabs[0].id;
+  brSwitchTab(STATE.activeTab);
+}
+function brShowHome(){
+  document.getElementById('br-iframe-wrap').style.display='none';
+  document.getElementById('br-home').style.display='flex';
+  document.getElementById('br-url').value='';
+  const t=STATE.brTabs.find(t=>t.id===STATE.activeTab);
+  if(t){t.url='';t.title='Новая вкладка';}
+  brRenderTabs();
+}
+function brGo(){
+  let v=document.getElementById('br-url').value.trim();
+  if(!v) return;
+  // Search if not URL
+  if(!v.includes('.')&&!v.startsWith('http')){
+    v='https://duckduckgo.com/?q='+encodeURIComponent(v);
+  }
+  if(!v.startsWith('http://') && !v.startsWith('https://')) v='https://'+v;
+  brLoad(v);
+}
+function brLoad(url){
+  document.getElementById('br-url').value=url;
+  const t=STATE.brTabs.find(t=>t.id===STATE.activeTab);
+  if(t){t.url=url;try{t.title=new URL(url).hostname.replace('www.','');}catch(e){t.title=url;}}
+  brRenderTabs();
+  brLoadIframe(url);
+}
+function brLoadIframe(url){
+  const wrap=document.getElementById('br-iframe-wrap');
+  const home=document.getElementById('br-home');
+  const loading=document.getElementById('br-loading');
+  const blocked=document.getElementById('br-blocked');
+  const iframe=document.getElementById('br-iframe');
+  home.style.display='none';
+  wrap.style.display='block';
+  blocked.style.display='none';
+  iframe.style.display='block';
+  loading.classList.add('show');
+  document.getElementById('br-blocked-url').textContent=`Сайт: ${url}`;
+
+  let done=false;
+  const timer=setTimeout(()=>{if(!done){done=true;loading.classList.remove('show');showBrBlocked(url);}},9000);
+
+  iframe.onload=()=>{
+    if(done) return;
+    done=true;
+    clearTimeout(timer);
+    loading.classList.remove('show');
+    try{
+      const doc=iframe.contentDocument;
+      if(doc&&(doc.URL==='about:blank'||doc.body.innerHTML==='')){
+        showBrBlocked(url);
+      }
+    }catch(e){
+      // cross-origin = loaded OK
+    }
+  };
+  iframe.onerror=()=>{if(!done){done=true;clearTimeout(timer);loading.classList.remove('show');showBrBlocked(url);}};
+  iframe.src=url;
+}
+function showBrBlocked(url){
+  const blocked=document.getElementById('br-blocked');
+  const iframe=document.getElementById('br-iframe');
+  iframe.style.display='none';
+  blocked.style.display='flex';
+  document.getElementById('br-loading').classList.remove('show');
+}
+function brOpenExternal(){
+  const t=STATE.brTabs.find(t=>t.id===STATE.activeTab);
+  if(t&&t.url) window.open(t.url,'_blank');
+  else toast('Нет активного URL');
+  closeBrMenu();
+}
+function brBack(){try{document.getElementById('br-iframe').contentWindow.history.back();}catch(e){}}
+function brFwd(){try{document.getElementById('br-iframe').contentWindow.history.forward();}catch(e){}}
+function brRefresh(){const f=document.getElementById('br-iframe');if(f.src){const s=f.src;f.src='about:blank';setTimeout(()=>f.src=s,50);}closeBrMenu();}
+function clearBrHistory(){toast('История очищена');closeBrPanel('brsettings');}
+
+// BR MENU
+function toggleBrMenu(e){
+  e.stopPropagation();
+  document.getElementById('br-menu').classList.toggle('open');
+}
+function closeBrMenu(){document.getElementById('br-menu').classList.remove('open');}
+document.addEventListener('click',function(e){closeBrMenu();});
+
+// BR PANELS
+function openBrPanel(name){
+  closeBrMenu();
+  document.getElementById('brp-'+name).classList.add('open');
+  if(name==='accounts') renderAccounts();
+  if(name==='downloads') renderDownloads();
+}
+function closeBrPanel(name){document.getElementById('brp-'+name).classList.remove('open');}
+
+// ACCOUNTS
+function renderAccounts(){
+  const list=document.getElementById('acc-list');
+  list.innerHTML='';
+  if(STATE.accounts.length===0){
+    list.innerHTML='<div style="text-align:center;color:var(--dim);font-size:13px;padding:16px 0;">Нет сохранённых аккаунтов</div>';
+    return;
+  }
+  STATE.accounts.forEach((acc,i)=>{
+    const active=STATE.activeAccount&&STATE.activeAccount.email===acc.email;
+    const el=document.createElement('div');
+    el.className='acc-card';
+    el.innerHTML=`
+      <div class="acc-avatar">${acc.name[0].toUpperCase()}</div>
+      <div class="acc-info">
+        <div class="acc-name">${acc.name} ${active?'<span class="acc-badge">Активен</span>':''}</div>
+        <div class="acc-email">${acc.email}</div>
+      </div>
+      <button class="btn-acc-del" onclick="deleteAcc(${i})">✕</button>
+    `;
+    el.onclick=()=>setActiveAcc(i);
+    list.appendChild(el);
+  });
+}
+function switchAccTab(tab){
+  document.getElementById('ftab-login').className='ftab'+(tab==='login'?' on':'');
+  document.getElementById('ftab-reg').className='ftab'+(tab==='reg'?' on':'');
+  document.getElementById('acc-form-login').style.display=tab==='login'?'block':'none';
+  document.getElementById('acc-form-reg').style.display=tab==='reg'?'block':'none';
+}
+function accLogin(){
+  const email=document.getElementById('acc-email-l').value.trim();
+  const pass=document.getElementById('acc-pass-l').value;
+  if(!email||!pass){toast('Введите email и пароль');return;}
+  const found=STATE.accounts.find(a=>a.email===email);
+  if(found){
+    if(found.pass!==pass){toast('Неверный пароль');return;}
+    STATE.activeAccount=found;
+    localStorage.setItem('liteos_active_acc',JSON.stringify(found));
+    toast(`✅ Вошли как ${found.name}`);
+    renderAccounts();
+  } else {
+    toast('Аккаунт не найден. Зарегистрируйтесь.');
+  }
+}
+function accRegister(){
+  const name=document.getElementById('acc-name-r').value.trim();
+  const email=document.getElementById('acc-email-r').value.trim();
+  const pass=document.getElementById('acc-pass-r').value;
+  if(!name||!email||!pass){toast('Заполните все поля');return;}
+  if(pass.length<6){toast('Пароль минимум 6 символов');return;}
+  if(!/\S+@\S+\.\S+/.test(email)){toast('Неверный формат email');return;}
+  if(STATE.accounts.find(a=>a.email===email)){toast('Email уже зарегистрирован');return;}
+  const acc={name,email,pass};
+  STATE.accounts.push(acc);
+  STATE.activeAccount=acc;
+  localStorage.setItem('liteos_accounts',JSON.stringify(STATE.accounts));
+  localStorage.setItem('liteos_active_acc',JSON.stringify(acc));
+  toast(`✅ Аккаунт создан! Привет, ${name}!`);
+  document.getElementById('acc-name-r').value='';
+  document.getElementById('acc-email-r').value='';
+  document.getElementById('acc-pass-r').value='';
+  renderAccounts();
+}
+function setActiveAcc(i){
+  STATE.activeAccount=STATE.accounts[i];
+  localStorage.setItem('liteos_active_acc',JSON.stringify(STATE.activeAccount));
+  toast(`Активен: ${STATE.activeAccount.name}`);
+  renderAccounts();
+}
+function deleteAcc(i){
+  const acc=STATE.accounts[i];
+  STATE.accounts.splice(i,1);
+  if(STATE.activeAccount&&STATE.activeAccount.email===acc.email){
+    STATE.activeAccount=null;
+    localStorage.removeItem('liteos_active_acc');
+  }
+  localStorage.setItem('liteos_accounts',JSON.stringify(STATE.accounts));
+  toast('Аккаунт удалён');
+  renderAccounts();
+}
+
+// DOWNLOADS
+function renderDownloads(){
+  const list=document.getElementById('dl-list');
+  list.innerHTML='';
+  if(!STATE.downloads.length){
+    list.innerHTML='<div style="text-align:center;color:var(--dim);font-size:13px;padding:20px 0;">Загрузок нет</div>';
+    return;
+  }
+  STATE.downloads.forEach((dl,i)=>{
+    const el=document.createElement('div');
+    el.className='dl-item';
+    const ico = dl.name.endsWith('.mp3')||dl.name.endsWith('.wav')?'🎵':
+                dl.name.endsWith('.mp4')||dl.name.endsWith('.avi')?'🎬':
+                dl.name.endsWith('.pdf')?'📄':
+                dl.name.endsWith('.zip')||dl.name.endsWith('.rar')?'📦':'📎';
+    el.innerHTML=`
+      <div class="dl-ico">${ico}</div>
+      <div class="dl-info">
+        <div class="dl-name">${dl.name}</div>
+        <div class="dl-size">${dl.size}</div>
+        <div class="dl-status" style="color:${dl.done?'#4ade80':'#fbbf24'}">${dl.done?'✅ Готово':'⏳ Загрузка...'}</div>
+      </div>
+      <button class="dl-open" onclick="openDownload(${i})">↗</button>
+    `;
+    list.appendChild(el);
+  });
+}
+function addDownload(){
+  const url=document.getElementById('dl-url-input').value.trim();
+  if(!url){toast('Введите URL');return;}
+  if(!url.startsWith('http')){toast('Неверный URL (нужен https://)');return;}
+  const name=url.split('/').pop()||'file';
+  const sizes=['1.2 МБ','3.4 МБ','780 КБ','2.1 МБ','5.6 МБ'];
+  const dl={url,name,size:sizes[Math.floor(Math.random()*sizes.length)],done:false};
+  STATE.downloads.push(dl);
+  localStorage.setItem('liteos_downloads',JSON.stringify(STATE.downloads));
+  toast('⏳ Загрузка начата...');
+  document.getElementById('dl-url-input').value='';
+  renderDownloads();
+  // Simulate download
+  setTimeout(()=>{
+    dl.done=true;
+    localStorage.setItem('liteos_downloads',JSON.stringify(STATE.downloads));
+    toast(`✅ ${name} загружен!`);
+    renderDownloads();
+  },3000+Math.random()*3000);
+}
+function openDownload(i){
+  const dl=STATE.downloads[i];
+  if(dl.done) window.open(dl.url,'_blank');
+  else toast('Ещё загружается...');
+}
+
+// ==================== SETTINGS ====================
+function openSub(name){
+  document.getElementById('sub-'+name).classList.add('open');
+}
+function closeSub(name){
+  document.getElementById('sub-'+name).classList.remove('open');
+}
+
+// WIFI
+const WIFI_NETS = [
+  {name:'Fastweb-5G',signal:'📶📶📶📶',lock:'🔒',secured:true,connected:true},
+  {name:'WINDTRE-HOME',signal:'📶📶📶',lock:'🔒',secured:true,connected:false},
+  {name:'TIM-GUEST',signal:'📶📶',lock:'',secured:false,connected:false},
+  {name:'Vodafone-2.4G',signal:'📶📶📶',lock:'🔒',secured:true,connected:false},
+  {name:'ILIAD_5G',signal:'📶📶📶📶',lock:'🔒',secured:true,connected:false},
+];
+function toggleWifi(tog){
+  tog.classList.toggle('on');
+  STATE.wifi=tog.classList.contains('on');
+  document.getElementById('wifi-networks-wrap').style.display=STATE.wifi?'block':'none';
+  document.getElementById('wifi-status-val').textContent=STATE.wifi?`Подключено`:'Выкл';
+  document.getElementById('sb-wifi').textContent=STATE.wifi?'📶':'';
+  toast('Wi-Fi: '+(STATE.wifi?'ВКЛ':'ВЫКЛ'));
+  if(STATE.wifi) renderWifiNets();
+}
+function renderWifiNets(){
+  const cont=document.getElementById('wifi-networks');
+  cont.innerHTML='';
+  WIFI_NETS.forEach(net=>{
+    const el=document.createElement('div');
+    el.className='wifi-net'+(net.name===STATE.connectedWifi?' wifi-connected':'');
+    el.innerHTML=`
+      <div class="wifi-signal">${net.signal.split('📶').length-1>2?'▂▄▆█':'▂▄▆'}</div>
+      <div style="flex:1"><div class="wifi-name">${net.name}${net.name===STATE.connectedWifi?' <span style="color:#4ade80;font-size:11px;">✓ Подключено</span>':''}</div><div class="wifi-type">${net.secured?'Защищена WPA2':'Открытая'}</div></div>
+      <div class="wifi-lock">${net.lock}</div>
+    `;
+    el.onclick=()=>connectWifi(net);
+    cont.appendChild(el);
+  });
+}
+function connectWifi(net){
+  if(net.name===STATE.connectedWifi){toast('Уже подключено');return;}
+  if(net.secured){
+    const pass=prompt(`Введите пароль для "${net.name}":`);
+    if(!pass) return;
+  }
+  STATE.connectedWifi=net.name;
+  document.getElementById('wifi-status-val').textContent=net.name;
+  toast(`✅ Подключено к ${net.name}`);
+  renderWifiNets();
+}
+// init wifi nets on page load
+setTimeout(renderWifiNets,100);
+
+function toggleBt(tog){
+  tog.classList.toggle('on');
+  STATE.bt=tog.classList.contains('on');
+  document.getElementById('bt-devices-wrap').style.display=STATE.bt?'block':'none';
+  document.getElementById('bt-status-val').textContent=STATE.bt?'Вкл':'Выкл';
+  toast('Bluetooth: '+(STATE.bt?'ВКЛ':'ВЫКЛ'));
+}
+function btConnect(name){
+  STATE.connectedBt=name;
+  toast(`✅ Bluetooth: подключено к ${name}`);
+  document.getElementById('bt-status-val').textContent=name;
+}
+
+// ==================== YOUTUBE ====================
+const YT_SUGGESTIONS = [
+  {id:'dQw4w9WgXcQ',title:'Rick Astley - Never Gonna Give You Up',ch:'RickAstleyVEVO'},
+  {id:'kJQP7kiw5Fk',title:'Luis Fonsi - Despacito',ch:'LuisFonsiVEVO'},
+  {id:'JGwWNGJdvx8',title:'Ed Sheeran - Shape of You',ch:'EdSheeranVEVO'},
+  {id:'OPf0YbXqDm0',title:'Mark Ronson - Uptown Funk',ch:'MarkRonsonVEVO'},
+  {id:'60ItHLz5WEA',title:'Alan Walker - Faded',ch:'AlanWalkerMusic'},
+  {id:'09R8_2nJtjg',title:'Maroon 5 - Sugar',ch:'Maroon5VEVO'},
+];
+function initYt(){
+  const sg=document.getElementById('yt-suggest');
+  sg.innerHTML='';
+  YT_SUGGESTIONS.forEach(v=>{
+    const el=document.createElement('div');
+    el.className='yt-card';
+    el.innerHTML=`<div class="yt-thumb" style="background:linear-gradient(135deg,hsl(${Math.random()*360},50%,15%),hsl(${Math.random()*360},40%,10%))"><img src='https://img.youtube.com/vi/${v.id}/mqdefault.jpg' style='width:100%;height:100%;object-fit:cover;border-radius:10px;' onerror="this.style.display='none'"/><div class="yt-play">▶</div></div><div class="yt-info"><div class="yt-title">${v.title}</div><div class="yt-ch">${v.ch}</div></div>`;
+    el.onclick=()=>ytPlayId(v.id,v.title,v.ch);
+    sg.appendChild(el);
+  });
+}
+function ytLoad(){
+  let v=document.getElementById('yt-url').value.trim();
+  if(!v) return;
+  // Extract video ID
+  let id='';
+  try{
+    if(v.includes('youtu.be/')){id=v.split('youtu.be/')[1].split('?')[0];}
+    else if(v.includes('youtube.com')){const u=new URL(v);id=u.searchParams.get('v')||'';}
+    else if(/^[a-zA-Z0-9_-]{11}$/.test(v)){id=v;}
+  }catch(e){id=v;}
+  if(id) ytPlayId(id);
+  else toast('Неверная ссылка YouTube');
+}
+function ytPlayId(id,title,ch){
+  const url='https://www.youtube.com/watch?v='+id;
+  const wrap=document.getElementById('yt-player-wrap');
+  wrap.innerHTML=`
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+      padding:28px 20px;text-align:center;gap:14px;background:rgba(0,0,0,0.5);border-radius:18px;margin:10px;">
+      <div style="font-size:54px;filter:invert(1);">🤖</div>
+      <div style="font-size:16px;font-weight:800;color:#fff;">${title||'YouTube видео'}</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.5);">${ch||''}</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.4);max-width:260px;">
+        Встроенный плеер недоступен — YouTube блокирует встраивание.<br>Нажми кнопку ниже чтобы открыть видео.
+      </div>
+      <button onclick="window.open('${url}','_blank')" style="background:#ff0000;border:none;color:#fff;
+        padding:13px 28px;border-radius:24px;font-size:15px;font-weight:800;cursor:pointer;
+        font-family:inherit;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(255,0,0,0.4);">
+        ▶ Открыть на YouTube
+      </button>
+      <button onclick="document.getElementById('yt-player-wrap').innerHTML=''" style="background:rgba(255,255,255,0.1);
+        border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);padding:8px 20px;
+        border-radius:20px;font-size:12px;cursor:pointer;font-family:inherit;">← Назад</button>
+    </div>`;
+  wrap.scrollIntoView({behavior:'smooth'});
+  document.getElementById('yt-url').value=url;
+}
+
+// ==================== MAIL ====================
+const DEMO_MAILS = [
+  {from:'Google Security',email:'no-reply@google.com',subj:'Новый вход в аккаунт',preview:'Зафиксирован вход с нового устройства...',body:'Здравствуйте!\n\nМы зафиксировали новый вход в ваш аккаунт Google.\n\nУстройство: LiteOS 2.0\nВремя: сейчас\n\nЕсли это были не вы, немедленно смените пароль.',time:'10:24',unread:true,folder:'inbox'},
+  {from:'GitHub',email:'noreply@github.com',subj:'Your pull request was merged',preview:'Your PR #142 has been successfully...',body:'Your pull request #142 "Fix navigation bug" has been successfully merged into main.\n\nGreat work!',time:'09:15',unread:true,folder:'inbox'},
+  {from:'KONA Tech',email:'info@konatech.io',subj:'Добро пожаловать в LiteOS!',preview:'Спасибо что выбрали LiteOS 2.0...',body:'Привет!\n\nДобро пожаловать в LiteOS 2.0!\n\nВы получили доступ ко всем функциям нашей операционной системы.\n\nС уважением,\nКоманда KONA Tech',time:'Вчера',unread:false,folder:'inbox'},
+  {from:'PayPal',email:'service@paypal.com',subj:'Квитанция о платеже',preview:'Вы отправили 15.00 EUR...',body:'Транзакция успешно выполнена.\n\nСумма: 15.00 EUR\nПолучатель: Amazon\nДата: сегодня',time:'Вчера',unread:false,folder:'inbox'},
+  {from:'Amazon',email:'orders@amazon.it',subj:'Ваш заказ отправлен',preview:'Заказ #IT-0392 в пути...',body:'Ваш заказ #IT-0392 был отправлен!\n\nОжидаемая дата доставки: завтра\n\nОтследить посылку можно в личном кабинете.',time:'02.04',unread:false,folder:'inbox'},
+];
+let mailState={folder:'inbox',viewMail:null,loggedIn:false};
+
+function initMail(){
+  const mb=document.getElementById('mail-body');
+  const ml=JSON.parse(localStorage.getItem('liteos_mail_acc')||'null');
+  if(ml){
+    mailState.loggedIn=true;
+    mailState.account=ml;
+    STATE.mailMessages=[...DEMO_MAILS];
+    renderMailInbox();
+    document.getElementById('mail-compose-btn').style.display='';
+    document.getElementById('prof-name').textContent=ml.name;
+  } else {
+    renderMailLogin();
+  }
+}
+function renderMailLogin(){
+  const mb=document.getElementById('mail-body');
+  mb.innerHTML=`
+    <div class="mail-login-wrap">
+      <div style="font-size:50px;margin-bottom:16px;">✉️</div>
+      <div style="font-size:20px;font-weight:800;margin-bottom:6px;">LiteMail</div>
+      <div style="font-size:13px;color:var(--dim);margin-bottom:24px;">Почтовый клиент KONA Tech</div>
+      <div class="form-wrap" style="width:100%;max-width:360px;">
+        <div class="form-tabs">
+          <div class="ftab on" id="mftab-l" onclick="mailTabSwitch('l')">Войти</div>
+          <div class="ftab" id="mftab-r" onclick="mailTabSwitch('r')">Аккаунт</div>
+        </div>
+        <div id="mf-l">
+          <input class="finput" id="ml-name" type="text" placeholder="Ваше имя">
+          <input class="finput" id="ml-email" type="email" placeholder="Email (gmail, yahoo, etc.)">
+          <input class="finput" id="ml-pass" type="password" placeholder="Пароль от почты">
+          <div style="font-size:11px;color:var(--dim2);margin-bottom:8px;">⚠️ Пароль хранится локально в браузере</div>
+          <button class="btn-submit" onclick="mailLogin()">Войти в почту</button>
+        </div>
+        <div id="mf-r" style="display:none">
+          <input class="finput" id="mr-name" type="text" placeholder="Имя">
+          <input class="finput" id="mr-email" type="email" placeholder="Email">
+          <input class="finput" id="mr-pass" type="password" placeholder="Пароль">
+          <button class="btn-submit" onclick="mailRegister()">Создать аккаунт LiteMail</button>
+        </div>
+      </div>
+    </div>`;
+}
+function mailTabSwitch(t){
+  document.getElementById('mftab-l').className='ftab'+(t==='l'?' on':'');
+  document.getElementById('mftab-r').className='ftab'+(t==='r'?' on':'');
+  document.getElementById('mf-l').style.display=t==='l'?'block':'none';
+  document.getElementById('mf-r').style.display=t==='r'?'block':'none';
+}
+function mailLogin(){
+  const name=document.getElementById('ml-name').value.trim();
+  const email=document.getElementById('ml-email').value.trim();
+  const pass=document.getElementById('ml-pass').value;
+  if(!name||!email||!pass){toast('Заполните все поля');return;}
+  if(!/\S+@\S+/.test(email)){toast('Неверный email');return;}
+  const acc={name,email,pass};
+  localStorage.setItem('liteos_mail_acc',JSON.stringify(acc));
+  mailState.loggedIn=true;mailState.account=acc;
+  STATE.mailMessages=[...DEMO_MAILS];
+  toast(`✅ Вошли как ${name}`);
+  document.getElementById('mail-compose-btn').style.display='';
+  document.getElementById('prof-name').textContent=name;
+  renderMailInbox();
+}
+function mailRegister(){
+  const name=document.getElementById('mr-name').value.trim();
+  const email=document.getElementById('mr-email').value.trim();
+  const pass=document.getElementById('mr-pass').value;
+  if(!name||!email||!pass){toast('Заполните все поля');return;}
+  const acc={name,email,pass};
+  localStorage.setItem('liteos_mail_acc',JSON.stringify(acc));
+  mailState.loggedIn=true;mailState.account=acc;
+  STATE.mailMessages=[...DEMO_MAILS];
+  toast(`✅ Аккаунт LiteMail создан!`);
+  document.getElementById('mail-compose-btn').style.display='';
+  renderMailInbox();
+}
+function renderMailInbox(){
+  const mb=document.getElementById('mail-body');
+  const folders=['inbox','sent','drafts'];
+  const fnames={inbox:'📥 Входящие',sent:'📤 Отправленные',drafts:'📝 Черновики'};
+  const msgs=STATE.mailMessages.filter(m=>m.folder===mailState.folder);
+  mb.innerHTML=`
+    <div style="margin-bottom:6px;font-size:12px;color:var(--dim);">Аккаунт: <b>${mailState.account?.email||''}</b> <span style="cursor:pointer;color:#f87171;margin-left:8px;" onclick="mailLogout()">Выйти</span></div>
+    <div class="mail-folders">
+      ${folders.map(f=>`<div class="mfold ${mailState.folder===f?'on':''}" onclick="mailFolder('${f}')">${fnames[f]}</div>`).join('')}
+    </div>
+    <div class="mail-list">
+      ${msgs.length===0?'<div style="text-align:center;color:var(--dim);padding:40px 0;font-size:13px;">Нет писем</div>':''}
+      ${msgs.map((m,i)=>`
+        <div class="mail-item ${m.unread?'unread':''}" onclick="openMail(${STATE.mailMessages.indexOf(m)})">
+          <div class="mi-top">
+            <div class="mi-from">${m.unread?'<span class="mi-dot"></span> ':''} ${m.from}</div>
+            <div class="mi-time">${m.time}</div>
+          </div>
+          <div class="mi-subj">${m.subj}</div>
+          <div class="mi-preview">${m.preview}</div>
+        </div>`).join('')}
+    </div>`;
+}
+function mailFolder(f){mailState.folder=f;renderMailInbox();}
+function openMail(i){
+  const m=STATE.mailMessages[i];
+  m.unread=false;
+  mailState.viewMail=i;
+  const mb=document.getElementById('mail-body');
+  mb.innerHTML=`
+    <div style="margin-bottom:12px;"><button class="btn-back" onclick="closeMailView()">← Назад</button></div>
+    <div class="mv-hd">
+      <div class="mv-subj">${m.subj}</div>
+      <div class="mv-from">От: ${m.from} &lt;${m.email}&gt;</div>
+      <div class="mv-to">Кому: ${mailState.account?.email||'me'}</div>
+      <div style="font-size:11px;color:var(--dim2);margin-top:4px;">${m.time}</div>
+    </div>
+    <div class="mv-body" style="white-space:pre-wrap;">${m.body}</div>
+    <div style="padding:14px;display:flex;gap:8px;">
+      <button class="btn-reply" onclick="replyTo('${m.email}','Re: ${m.subj}')">↩ Ответить</button>
+      <button class="btn-reply" style="background:rgba(248,113,113,.2);border-color:rgba(248,113,113,.35);color:#f87171;" onclick="deleteMail(${i})">🗑 Удалить</button>
+    </div>`;
+}
+function closeMailView(){mailState.viewMail=null;renderMailInbox();}
+function replyTo(email,subj){
+  openCompose();
+  setTimeout(()=>{
+    document.getElementById('compose-to').value=email;
+    document.getElementById('compose-subj').value=subj;
+  },100);
+}
+function deleteMail(i){
+  STATE.mailMessages.splice(i,1);
+  toast('Письмо удалено');
+  renderMailInbox();
+}
+function mailLogout(){
+  localStorage.removeItem('liteos_mail_acc');
+  mailState.loggedIn=false;mailState.account=null;
+  document.getElementById('mail-compose-btn').style.display='none';
+  renderMailLogin();
+  toast('Вышли из почты');
+}
+function mailBack(){
+  if(mailState.viewMail!==null){closeMailView();}
+  else closeApp('mail');
+}
+function openCompose(){
+  document.getElementById('compose-wrap').classList.add('open');
+}
+function closeCompose(){
+  document.getElementById('compose-wrap').classList.remove('open');
+  document.getElementById('compose-to').value='';
+  document.getElementById('compose-subj').value='';
+  document.getElementById('compose-text').value='';
+}
+function sendMail(){
+  const to=document.getElementById('compose-to').value.trim();
+  const subj=document.getElementById('compose-subj').value.trim();
+  const body=document.getElementById('compose-text').value.trim();
+  if(!to){toast('Укажите получателя');return;}
+  if(!subj){toast('Укажите тему');return;}
+  // Send via mailto as real action
+  const ml={from:mailState.account?.name||'LiteMail',email:mailState.account?.email||'me',
+    subj,preview:body.substring(0,60)+'...',body,time:'Только что',unread:false,folder:'sent'};
+  STATE.mailMessages.push(ml);
+  // Also try mailto
+  window.location.href=`mailto:${to}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
+  toast(`📤 Письмо отправлено на ${to}`);
+  closeCompose();
+}
+
+// ==================== DEVELOPER MODE ====================
+let vTaps=0,vTimer=null,curFw='2.0.0',fpsRaf=null;
+function tapVer(){
+  vTaps++;clearTimeout(vTimer);
+  vTimer=setTimeout(()=>vTaps=0,1600);
+  if(vTaps>=3&&vTaps<7) toast(`Ещё ${7-vTaps} нажатий`);
+  if(vTaps>=7){
+    vTaps=0;
+    if(!STATE.devEnabled){
+      STATE.devEnabled=true;
+      document.getElementById('devrow').style.display='flex';
+      toast('🛠 Режим разработчика включён!');
+    } else toast('Уже включён');
+  }
+}
+function openDev(){document.getElementById('dev').classList.add('open');termLog('LiteOS Dev Console 2.0','info');}
+function closeDev(){document.getElementById('dev').classList.remove('open');}
+function devTab(name,el){
+  document.querySelectorAll('.dtab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.dpanel').forEach(p=>p.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('dp-'+name).classList.add('on');
+}
+function termLog(msg,type='normal'){
+  const out=document.getElementById('term-out');
+  const ln=document.createElement('div');
+  const c={normal:'#e6edf3',dim:'#8b949e',warn:'#fbbf24',err:'#f87171',info:'#58a6ff'};
+  ln.style.color=c[type]||c.normal;ln.style.fontFamily='monospace';ln.style.fontSize='12px';ln.style.marginBottom='2px';
+  ln.innerHTML=`<span style="color:#58a6ff">lite@os:~$</span> ${msg}`;
+  out.appendChild(ln);out.scrollTop=out.scrollHeight;
+}
+const CMDS={
+  help:()=>termLog('Команды: help, clear, sysinfo, apps, uptime, reboot, echo [text]','info'),
+  clear:()=>document.getElementById('term-out').innerHTML='',
+  sysinfo:()=>termLog(`LiteOS ${curFw} | HTML5 | KONA Tech`,'normal'),
+  apps:()=>termLog('Установлено: '+STATE.installedApps.join(', '),'normal'),
+  uptime:()=>{const u=Math.floor(performance.now()/1000);termLog(`Uptime: ${Math.floor(u/60)}м ${u%60}с`,'normal');},
+  reboot:()=>{termLog('Перезагрузка...','warn');setTimeout(()=>{closeDev();document.getElementById('lock').style.display='flex';document.getElementById('lock').style.opacity='1';toast('Система перезагружена');},1200);},
+};
+function runCmd(){
+  const inp=document.getElementById('term-in');
+  const raw=inp.value.trim();if(!raw)return;
+  termLog(raw,'dim');inp.value='';
+  const parts=raw.split(' ');const cmd=parts[0].toLowerCase();
+  if(cmd==='echo')termLog(parts.slice(1).join(' '),'normal');
+  else if(CMDS[cmd])CMDS[cmd]();
+  else termLog(`Команда не найдена: ${cmd}`,'err');
+}
+function flashFw(btn,ver,name){
+  btn.textContent='Прошивка...';btn.disabled=true;
+  setTimeout(()=>{
+    document.querySelectorAll('#fw-list .btn-flash').forEach(b=>{b.classList.remove('inst');b.textContent='Flash';b.disabled=false;});
+    btn.classList.add('inst');btn.textContent='Installed';
+    curFw=ver;document.getElementById('ver-disp').textContent=ver;
+    document.getElementById('fw-cur').textContent=`${ver} — ${name}`;
+    toast(`✓ Прошивка: ${name} v${ver}`);
+  },2000);
+}
+function togTouch(tog){
+  tog.classList.toggle('on');
+  const d=document.getElementById('tdot');
+  if(tog.classList.contains('on')){d.style.display='block';document.addEventListener('mousemove',moveDot);}
+  else{d.style.display='none';document.removeEventListener('mousemove',moveDot);}
+}
+function moveDot(e){const d=document.getElementById('tdot');d.style.left=e.clientX+'px';d.style.top=e.clientY+'px';}
+function togFps(tog){
+  tog.classList.toggle('on');
+  const el=document.getElementById('fps-el');
+  if(tog.classList.contains('on')){
+    el.style.display='block';
+    let last=performance.now(),frames=0;
+    (function loop(){frames++;const now=performance.now();
+      if(now-last>=1000){el.textContent=frames+' FPS';frames=0;last=now;}
+      fpsRaf=requestAnimationFrame(loop);})();
+  }else{el.style.display='none';if(fpsRaf)cancelAnimationFrame(fpsRaf);}
+}
+
+// ==================== QUICK APPS (no dedicated screen) ====================
+function openCalculator(){
+  // Lazy create calculator screen
+  let sc=document.getElementById('scr-calculator');
+  if(!sc){
+    sc=document.createElement('div');sc.className='scr';sc.id='scr-calculator';
+    sc.innerHTML=`
+      <div class="atb"><button class="btn-back" onclick="closeApp('calculator')">← Назад</button><span class="atb-title">🧮 Калькулятор</span><span style="width:60px"></span></div>
+      <div class="scr-body" style="display:flex;flex-direction:column;align-items:center;padding-top:30px;">
+        <div id="calc-disp" style="width:100%;max-width:320px;background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:16px;padding:14px 18px;font-size:32px;font-weight:800;text-align:right;margin-bottom:14px;min-height:60px;word-break:break-all;">0</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%;max-width:320px;">
+          ${[['C','rgba(248,113,113,.3)'],['±','var(--glass)'],['%','var(--glass)'],['÷','rgba(99,102,241,.3)'],['7','var(--glass)'],['8','var(--glass)'],['9','var(--glass)'],['×','rgba(99,102,241,.3)'],['4','var(--glass)'],['5','var(--glass)'],['6','var(--glass)'],['−','rgba(99,102,241,.3)'],['1','var(--glass)'],['2','var(--glass)'],['3','var(--glass)'],['+'  ,'rgba(99,102,241,.3)'],['0','var(--glass)'],['.',  'var(--glass)'],['⌫','var(--glass)'],['=','rgba(56,189,248,.4)']].map(([k,bg])=>`<button onclick="calcBtn('${k}')" style="padding:18px 0;border-radius:14px;font-size:18px;font-weight:800;border:1px solid var(--border);cursor:pointer;font-family:inherit;background:${bg};color:#fff;">${k}</button>`).join('')}
+        </div>
+      </div>`;
+    document.body.appendChild(sc);
+    let calcBuf='0',calcOp=null,calcPrev=null,calcNew=true;
+    window.calcBtn=function(k){
+      const d=document.getElementById('calc-disp');
+      if(k==='C'){calcBuf='0';calcOp=null;calcPrev=null;calcNew=true;}
+      else if(k==='='){
+        if(calcOp&&calcPrev!==null){
+          const a=parseFloat(calcPrev),b=parseFloat(calcBuf);
+          let r=0;
+          if(calcOp==='÷')r=b!==0?a/b:0;
+          else if(calcOp==='×')r=a*b;
+          else if(calcOp==='−')r=a-b;
+          else if(calcOp==='+')r=a+b;
+          calcBuf=String(parseFloat(r.toFixed(10)));calcOp=null;calcPrev=null;calcNew=true;
+        }
+      }else if(['÷','×','−','+'].includes(k)){calcOp=k;calcPrev=calcBuf;calcNew=true;}
+      else if(k==='±'){calcBuf=String(-parseFloat(calcBuf));}
+      else if(k==='%'){calcBuf=String(parseFloat(calcBuf)/100);}
+      else if(k==='⌫'){calcBuf=calcBuf.length>1?calcBuf.slice(0,-1):'0';}
+      else if(k==='.'){if(!calcBuf.includes('.'))calcBuf+='.';calcNew=false;}
+      else{if(calcNew||calcBuf==='0'){calcBuf=k;calcNew=false;}else calcBuf+=k;}
+      d.textContent=calcBuf;
+    };
+  }
+  sc.classList.add('open');
+  addRec('calculator');
+  STATE.currentApp='calculator';
+}
+
+function openNotes(){
+  let sc=document.getElementById('scr-notes');
+  if(!sc){
+    sc=document.createElement('div');sc.className='scr';sc.id='scr-notes';
+    const savedNotes=JSON.parse(localStorage.getItem('liteos_notes')||'[]');
+    sc.innerHTML=`
+      <div class="atb"><button class="btn-back" onclick="closeApp('notes')">← Назад</button><span class="atb-title">📝 Заметки</span><button class="btn-back" onclick="addNote()" style="margin-left:auto">+ Новая</button></div>
+      <div class="scr-body" id="notes-body"></div>`;
+    document.body.appendChild(sc);
+    window._notes=savedNotes;
+    window.renderNotes=function(){
+      const b=document.getElementById('notes-body');
+      b.innerHTML=window._notes.length===0?'<div style="text-align:center;color:var(--dim);padding:40px;font-size:13px;">Заметок нет. Нажмите + для создания.</div>':
+        window._notes.map((n,i)=>`<div onclick="editNote(${i})" style="background:var(--glass);border:1px solid var(--border);border-radius:14px;padding:13px;margin-bottom:8px;cursor:pointer;"><div style="font-size:14px;font-weight:800;margin-bottom:3px;">${n.title||'Без названия'}</div><div style="font-size:12px;color:var(--dim);">${n.body.substring(0,80)}</div><div style="font-size:10px;color:var(--dim2);margin-top:5px;">${n.date}</div></div>`).join('');
+    };
+    window.addNote=function(){
+      // Show inline form instead of prompt (blocked on mobile)
+      const b=document.getElementById('notes-body');
+      if(document.getElementById('note-form'))return;
+      const form=document.createElement('div');
+      form.id='note-form';
+      form.style.cssText='background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:16px;padding:14px;margin-bottom:12px;';
+      form.innerHTML=`
+        <input id="note-t-inp" placeholder="Заголовок..." style="width:100%;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.2);color:#fff;font-size:16px;font-weight:800;padding:6px 0;margin-bottom:10px;outline:none;font-family:inherit;"/>
+        <textarea id="note-b-inp" placeholder="Текст заметки..." style="width:100%;background:transparent;border:none;color:rgba(255,255,255,0.85);font-size:13px;padding:4px 0;outline:none;font-family:inherit;resize:none;min-height:80px;display:block;"></textarea>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button onclick="window.saveNewNote()" style="flex:1;background:#38bdf8;border:none;color:#000;padding:10px;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">💾 Сохранить</button>
+          <button onclick="document.getElementById('note-form').remove()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;cursor:pointer;font-family:inherit;">✕</button>
+        </div>`;
+      b.insertBefore(form,b.firstChild);
+      document.getElementById('note-t-inp').focus();
+    };
+    window.saveNewNote=function(){
+      const t=document.getElementById('note-t-inp').value.trim();
+      const b2=document.getElementById('note-b-inp').value.trim();
+      if(!t&&!b2){toast('Напиши что-нибудь!');return;}
+      window._notes.unshift({title:t||'Без названия',body:b2,date:new Date().toLocaleDateString('ru')});
+      localStorage.setItem('liteos_notes',JSON.stringify(window._notes));
+      document.getElementById('note-form').remove();
+      window.renderNotes();toast('✅ Заметка сохранена');
+    };
+    window.editNote=function(i){
+      const n=window._notes[i];
+      const b=document.getElementById('notes-body');
+      if(document.getElementById('note-form'))document.getElementById('note-form').remove();
+      const form=document.createElement('div');
+      form.id='note-form';
+      form.style.cssText='background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:16px;padding:14px;margin-bottom:12px;';
+      form.innerHTML=`
+        <input id="note-t-inp" value="${n.title.replace(/"/g,'&quot;')}" style="width:100%;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.2);color:#fff;font-size:16px;font-weight:800;padding:6px 0;margin-bottom:10px;outline:none;font-family:inherit;"/>
+        <textarea id="note-b-inp" style="width:100%;background:transparent;border:none;color:rgba(255,255,255,0.85);font-size:13px;padding:4px 0;outline:none;font-family:inherit;resize:none;min-height:80px;display:block;">${n.body}</textarea>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button onclick="window.saveEditNote(${i})" style="flex:1;background:#38bdf8;border:none;color:#000;padding:10px;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">💾 Сохранить</button>
+          <button onclick="window.deleteNote(${i})" style="background:rgba(248,113,113,0.2);border:1px solid rgba(248,113,113,0.3);color:#f87171;padding:10px 12px;border-radius:10px;font-size:13px;cursor:pointer;font-family:inherit;">🗑</button>
+          <button onclick="document.getElementById('note-form').remove()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:10px 12px;border-radius:10px;font-size:13px;cursor:pointer;font-family:inherit;">✕</button>
+        </div>`;
+      b.insertBefore(form,b.firstChild);
+    };
+    window.saveEditNote=function(i){
+      window._notes[i].title=document.getElementById('note-t-inp').value.trim()||'Без названия';
+      window._notes[i].body=document.getElementById('note-b-inp').value.trim();
+      localStorage.setItem('liteos_notes',JSON.stringify(window._notes));
+      document.getElementById('note-form').remove();
+      window.renderNotes();toast('✅ Сохранено');
+    };
+    window.deleteNote=function(i){
+      window._notes.splice(i,1);
+      localStorage.setItem('liteos_notes',JSON.stringify(window._notes));
+      document.getElementById('note-form').remove();
+      window.renderNotes();toast('🗑 Удалено');
+    };
+    window.renderNotes();
+  }
+  sc.classList.add('open');
+  addRec('notes');
+  STATE.currentApp='notes';
+}
+
+// ==================== INIT BROWSER TABS ====================
+brRenderTabs();
+
+// ==================== STYLE for close anim ====================
+const sty=document.createElement('style');
+sty.textContent='@keyframes appclose{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(.94)}}';
+document.head.appendChild(sty);
+
+console.log('LiteOS 2.0 — KONA Tech — loaded ✅');
+
+// ==================== GAME HELPERS ====================
+function closeGame(name){
+  const el=document.getElementById('scr-'+name);
+  if(el){el.style.display='none';}
+  if(name==='snake'){clearInterval(snakeInterval);snakeInterval=null;}
+  if(name==='clock'){clearInterval(clockBigInterval);clearInterval(timerInterval);timerInterval=null;}
+  STATE.currentApp=null;
+}
+function openSnake(){
+  document.getElementById('scr-snake').style.display='flex';
+  STATE.currentApp='snake';
+  addRec('snake');
+  snakeDraw();
+}
+function openTTT(){
+  document.getElementById('scr-ttt').style.display='flex';
+  STATE.currentApp='ttt';
+  addRec('ttt');
+  tttReset();
+}
+function open2048(){
+  document.getElementById('scr-g2048').style.display='flex';
+  STATE.currentApp='g2048';
+  addRec('g2048');
+  init2048();
+}
+function openClock(){
+  document.getElementById('scr-clock').style.display='flex';
+  STATE.currentApp='clock';
+  addRec('clock');
+  clockBigTick();
+  clearInterval(clockBigInterval);
+  clockBigInterval=setInterval(clockBigTick,1000);
+  renderWorldTimes();
+}
+
+// ==================== SNAKE ====================
+let snakeBody=[{x:5,y:5}],snakeDir2={x:1,y:0},snakeFood={x:10,y:10};
+let snakeScore2=0,snakeInterval=null,snakeRunning=false;
+const SZ=14,COLS=20,ROWS=20;
+function snakeStart(){
+  snakeBody=[{x:5,y:5},{x:4,y:5},{x:3,y:5}];
+  snakeDir2={x:1,y:0};snakeScore2=0;snakeRunning=true;
+  document.getElementById('snake-score').textContent=0;
+  document.getElementById('snake-start-btn').style.display='none';
+  placeFood();
+  clearInterval(snakeInterval);
+  snakeInterval=setInterval(snakeTick,120);
+}
+function placeFood(){snakeFood={x:Math.floor(Math.random()*COLS),y:Math.floor(Math.random()*ROWS)};}
+function snakeDir(dx,dy){
+  if(dx===1&&snakeDir2.x===-1)return;if(dx===-1&&snakeDir2.x===1)return;
+  if(dy===1&&snakeDir2.y===-1)return;if(dy===-1&&snakeDir2.y===1)return;
+  snakeDir2={x:dx,y:dy};
+}
+function snakeTick(){
+  const head={x:snakeBody[0].x+snakeDir2.x,y:snakeBody[0].y+snakeDir2.y};
+  if(head.x<0||head.x>=COLS||head.y<0||head.y>=ROWS||snakeBody.some(s=>s.x===head.x&&s.y===head.y)){
+    clearInterval(snakeInterval);snakeRunning=false;
+    document.getElementById('snake-start-btn').style.display='block';
+    document.getElementById('snake-start-btn').textContent='🔄 Ещё раз';
+    toast('💀 Игра окончена! Счёт: '+snakeScore2);return;
+  }
+  snakeBody.unshift(head);
+  if(head.x===snakeFood.x&&head.y===snakeFood.y){
+    snakeScore2+=10;document.getElementById('snake-score').textContent=snakeScore2;placeFood();
+  } else {snakeBody.pop();}
+  snakeDraw();
+}
+function snakeDraw(){
+  const c=document.getElementById('snake-canvas');if(!c)return;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#0a0a1a';ctx.fillRect(0,0,c.width,c.height);
+  // Grid
+  ctx.strokeStyle='rgba(255,255,255,0.04)';
+  for(let i=0;i<=COLS;i++){ctx.beginPath();ctx.moveTo(i*SZ,0);ctx.lineTo(i*SZ,ROWS*SZ);ctx.stroke();}
+  for(let j=0;j<=ROWS;j++){ctx.beginPath();ctx.moveTo(0,j*SZ);ctx.lineTo(COLS*SZ,j*SZ);ctx.stroke();}
+  // Food
+  ctx.fillStyle='#f87171';ctx.beginPath();ctx.arc(snakeFood.x*SZ+SZ/2,snakeFood.y*SZ+SZ/2,SZ/2-1,0,Math.PI*2);ctx.fill();
+  // Snake
+  snakeBody.forEach((s,i)=>{
+    ctx.fillStyle=i===0?'#4ade80':'#16a34a';
+    ctx.beginPath();ctx.roundRect(s.x*SZ+1,s.y*SZ+1,SZ-2,SZ-2,3);ctx.fill();
+  });
+  if(!snakeRunning&&snakeBody.length===1){
+    ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font='14px Nunito';ctx.textAlign='center';
+    ctx.fillText('Нажми "Начать"',c.width/2,c.height/2);
+  }
+}
+
+// ==================== TTT ====================
+let tttBoard=Array(9).fill(''),tttTurn='X',tttOver=false;
+const tttWins=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+function tttReset(){
+  tttBoard=Array(9).fill('');tttTurn='X';tttOver=false;
+  document.getElementById('ttt-status').textContent='Твой ход (X)';
+  tttRender();
+}
+function tttRender(){
+  const board=document.getElementById('ttt-board');
+  board.innerHTML='';
+  tttBoard.forEach((cell,i)=>{
+    const el=document.createElement('div');
+    el.style.cssText='background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:800;cursor:pointer;transition:background .15s;';
+    el.textContent=cell;
+    if(cell==='X')el.style.color='#38bdf8';
+    if(cell==='O')el.style.color='#f87171';
+    if(!cell&&!tttOver)el.onclick=()=>tttPlay(i);
+    board.appendChild(el);
+  });
+}
+function tttPlay(i){
+  if(tttBoard[i]||tttOver)return;
+  tttBoard[i]=tttTurn;
+  const win=tttWins.find(w=>w.every(j=>tttBoard[j]===tttTurn));
+  if(win){tttOver=true;document.getElementById('ttt-status').textContent=(tttTurn==='X'?'🎉 Ты победил!':'🤖 ИИ победил!');tttRender();return;}
+  if(tttBoard.every(c=>c)){tttOver=true;document.getElementById('ttt-status').textContent='🤝 Ничья!';tttRender();return;}
+  tttTurn='O';document.getElementById('ttt-status').textContent='🤖 Ход ИИ...';tttRender();
+  setTimeout(()=>{
+    const empty=tttBoard.map((c,i)=>c?-1:i).filter(i=>i>=0);
+    // Try to win
+    let move=-1;
+    for(const w of tttWins){if(w.filter(j=>tttBoard[j]==='O').length===2&&w.some(j=>!tttBoard[j])){move=w.find(j=>!tttBoard[j]);break;}}
+    // Block player
+    if(move<0){for(const w of tttWins){if(w.filter(j=>tttBoard[j]==='X').length===2&&w.some(j=>!tttBoard[j])){move=w.find(j=>!tttBoard[j]);break;}}}
+    // Center
+    if(move<0&&!tttBoard[4])move=4;
+    // Random
+    if(move<0)move=empty[Math.floor(Math.random()*empty.length)];
+    tttBoard[move]='O';
+    const win2=tttWins.find(w=>w.every(j=>tttBoard[j]==='O'));
+    if(win2){tttOver=true;document.getElementById('ttt-status').textContent='🤖 ИИ победил!';tttRender();return;}
+    if(tttBoard.every(c=>c)){tttOver=true;document.getElementById('ttt-status').textContent='🤝 Ничья!';tttRender();return;}
+    tttTurn='X';document.getElementById('ttt-status').textContent='Твой ход (X)';tttRender();
+  },500);
+}
+
+// ==================== 2048 ====================
+let grid2048=[];let score2048=0;
+const TILE_COLORS={'2':'#eee4da','4':'#ede0c8','8':'#f2b179','16':'#f59563','32':'#f67c5f','64':'#f65e3b','128':'#edcf72','256':'#edcc61','512':'#edc850','1024':'#edc53f','2048':'#edc22e'};
+function init2048(){
+  grid2048=Array.from({length:4},()=>Array(4).fill(0));score2048=0;
+  document.getElementById('g2048-score').textContent=0;
+  add2048Tile();add2048Tile();render2048();
+  // Swipe support
+  const board=document.getElementById('g2048-board');
+  let tx=0,ty=0;
+  board.ontouchstart=e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY;};
+  board.ontouchend=e=>{
+    const dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;
+    if(Math.abs(dx)>Math.abs(dy)){if(dx>30)move2048('right');else if(dx<-30)move2048('left');}
+    else{if(dy>30)move2048('down');else if(dy<-30)move2048('up');}
+  };
+}
+function add2048Tile(){
+  const empty=[];
+  grid2048.forEach((row,r)=>row.forEach((v,c)=>{if(!v)empty.push([r,c]);}));
+  if(!empty.length)return;
+  const [r,c]=empty[Math.floor(Math.random()*empty.length)];
+  grid2048[r][c]=Math.random()<0.9?2:4;
+}
+function render2048(){
+  const board=document.getElementById('g2048-board');
+  board.innerHTML='';
+  grid2048.forEach(row=>row.forEach(v=>{
+    const el=document.createElement('div');
+    el.style.cssText=`display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:${v>=1024?14:v>=100?16:20}px;font-weight:800;color:${v<=4?'#776e65':'#f9f6f2'};background:${TILE_COLORS[v]||'#3c3a32'};transition:all .1s;`;
+    el.textContent=v||'';
+    board.appendChild(el);
+  }));
+}
+function move2048(dir){
+  let moved=false;
+  const rotate=g=>g[0].map((_,i)=>g.map(row=>row[i]).reverse());
+  let g=grid2048.map(r=>[...r]);
+  if(dir==='left'||dir==='right'){
+    g=g.map(row=>{
+      let r=row.filter(v=>v);
+      if(dir==='right')r.reverse();
+      for(let i=0;i<r.length-1;i++){if(r[i]===r[i+1]){r[i]*=2;score2048+=r[i];r.splice(i+1,1);}}
+      while(r.length<4)r.push(0);
+      if(dir==='right')r.reverse();
+      if(r.join()!==row.join())moved=true;
+      return r;
+    });
+  } else {
+    let t=rotate(g);
+    t=t.map(row=>{
+      let r=row.filter(v=>v);
+      if(dir==='down')r.reverse();
+      for(let i=0;i<r.length-1;i++){if(r[i]===r[i+1]){r[i]*=2;score2048+=r[i];r.splice(i+1,1);}}
+      while(r.length<4)r.push(0);
+      if(dir==='down')r.reverse();
+      if(r.join()!==row.join())moved=true;
+      return r;
+    });
+    g=rotate(rotate(rotate(t)));
+  }
+  if(moved){grid2048=g;add2048Tile();document.getElementById('g2048-score').textContent=score2048;render2048();}
+}
+document.addEventListener('keydown',e=>{
+  if(STATE.currentApp!=='g2048')return;
+  if(e.key==='ArrowLeft')move2048('left');
+  if(e.key==='ArrowRight')move2048('right');
+  if(e.key==='ArrowUp')move2048('up');
+  if(e.key==='ArrowDown')move2048('down');
+});
+
+// ==================== CLOCK ====================
+let clockBigInterval=null;
+function clockBigTick(){
+  const n=new Date();
+  const h=String(n.getHours()).padStart(2,'0');
+  const m=String(n.getMinutes()).padStart(2,'0');
+  const s=String(n.getSeconds()).padStart(2,'0');
+  const el=document.getElementById('big-clock');
+  const del=document.getElementById('big-date');
+  if(el)el.textContent=h+':'+m+':'+s;
+  const days=['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+  const months=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  if(del)del.textContent=days[n.getDay()]+', '+n.getDate()+' '+months[n.getMonth()];
+}
+function renderWorldTimes(){
+  const zones=[
+    {name:'Москва',tz:'Europe/Moscow',flag:'🇷🇺'},
+    {name:'Рим',tz:'Europe/Rome',flag:'🇮🇹'},
+    {name:'Лондон',tz:'Europe/London',flag:'🇬🇧'},
+    {name:'Нью-Йорк',tz:'America/New_York',flag:'🇺🇸'},
+    {name:'Токио',tz:'Asia/Tokyo',flag:'🇯🇵'},
+    {name:'Дубай',tz:'Asia/Dubai',flag:'🇦🇪'},
+  ];
+  const el=document.getElementById('world-times');
+  if(!el)return;
+  el.innerHTML=zones.map(z=>{
+    const t=new Date().toLocaleTimeString('ru-RU',{timeZone:z.tz,hour:'2-digit',minute:'2-digit'});
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+      <span>${z.flag} ${z.name}</span><span style="font-weight:800;font-size:15px;">${t}</span></div>`;
+  }).join('');
+}
+let timerInterval=null,timerLeft=60;
+function timerStart(){
+  const m=parseInt(document.getElementById('timer-min').value)||0;
+  const s=parseInt(document.getElementById('timer-sec').value)||0;
+  timerLeft=m*60+s;
+  if(timerLeft<=0){toast('Укажи время');return;}
+  clearInterval(timerInterval);
+  timerInterval=setInterval(()=>{
+    timerLeft--;
+    const mm=String(Math.floor(timerLeft/60)).padStart(2,'0');
+    const ss=String(timerLeft%60).padStart(2,'0');
+    const el=document.getElementById('timer-display');
+    if(el)el.textContent=mm+':'+ss;
+    if(timerLeft<=0){clearInterval(timerInterval);toast('⏰ Таймер завершён!');}
+  },1000);
+}
+function timerStop(){clearInterval(timerInterval);}
+function timerReset(){
+  clearInterval(timerInterval);timerLeft=60;
+  const el=document.getElementById('timer-display');
+  if(el)el.textContent='01:00';
+}
+
+
+// ==================== CAMERA ====================
+function openCamera(){
+  let sc=document.getElementById('scr-camera');
+  if(!sc){
+    sc=document.createElement('div');sc.className='scr';sc.id='scr-camera';
+    sc.innerHTML=`
+      <div class="atb"><button class="btn-back" onclick="closeApp('camera')">← Назад</button><span class="atb-title">📷 Камера</span><span style="width:60px"></span></div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;">
+        <div style="width:100%;max-width:340px;aspect-ratio:3/4;background:#000;border-radius:20px;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;">
+          <video id="cam-video" autoplay playsinline style="width:100%;height:100%;object-fit:cover;border-radius:20px;"></video>
+          <div id="cam-placeholder" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:#111;border-radius:20px;">
+            <div style="font-size:60px;">📷</div>
+            <div style="font-size:14px;color:rgba(255,255,255,0.5);">Нет доступа к камере</div>
+            <button onclick="startCamera()" style="background:#38bdf8;border:none;color:#000;padding:10px 24px;border-radius:20px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">📷 Открыть камеру</button>
+            <div style="margin-top:8px;font-size:12px;color:rgba(255,255,255,0.4);">или</div>
+            <label style="display:inline-block;margin-top:6px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:8px 20px;border-radius:20px;font-size:12px;cursor:pointer;font-family:inherit;">📁 Выбрать фото<input type="file" accept="image/*" capture="environment" onchange="showFilePhoto(this)" style="display:none;"/></label>
+          </div>
+        </div>
+        <canvas id="cam-canvas" style="display:none;border-radius:16px;max-width:100%;"></canvas>
+        <div style="display:flex;gap:16px;align-items:center;">
+          <button onclick="switchCamera()" style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;font-size:20px;cursor:pointer;">🔄</button>
+          <button onclick="takePhoto()" style="width:70px;height:70px;border-radius:50%;background:#fff;border:4px solid rgba(255,255,255,0.4);cursor:pointer;font-size:28px;">📸</button>
+          <button onclick="showGalleryBtn()" style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;font-size:20px;cursor:pointer;">🖼</button>
+        </div>
+      </div>`;
+    document.body.appendChild(sc);
+  }
+  sc.classList.add('open');
+  addRec('camera');STATE.currentApp='camera';
+  startCamera();
+}
+let camStream=null,camFacing='environment';
+function startCamera(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    toast('Камера недоступна в этом браузере');return;
+  }
+  navigator.mediaDevices.getUserMedia({video:{facingMode:camFacing},audio:false})
+    .then(s=>{
+      camStream=s;
+      const v=document.getElementById('cam-video');
+      v.srcObject=s;
+      document.getElementById('cam-placeholder').style.display='none';
+    })
+    .catch(err=>{
+      toast('❌ Нет доступа: '+err.message);
+    });
+}
+function showFilePhoto(input){
+  if(!input.files||!input.files[0])return;
+  const url=URL.createObjectURL(input.files[0]);
+  const v=document.getElementById('cam-video');
+  v.style.display='none';
+  const img=document.createElement('img');
+  img.src=url;img.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:20px;';
+  v.parentNode.insertBefore(img,v);
+  document.getElementById('cam-placeholder').style.display='none';
+  toast('📷 Фото загружено!');
+}
+function switchCamera(){camFacing=camFacing==='environment'?'user':'environment';if(camStream){camStream.getTracks().forEach(t=>t.stop());}startCamera();}
+function takePhoto(){
+  const v=document.getElementById('cam-video');
+  const c=document.getElementById('cam-canvas');
+  c.width=v.videoWidth||320;c.height=v.videoHeight||240;
+  const ctx=c.getContext('2d');ctx.drawImage(v,0,0);
+  c.style.display='block';
+  toast('📸 Фото сделано!');
+  setTimeout(()=>c.style.display='none',2000);
+}
+function showGalleryBtn(){openGallery();}
+
+// ==================== MUSIC ====================
+function openMusic(){
+  let sc=document.getElementById('scr-music');
+  if(!sc){
+    sc=document.createElement('div');sc.className='scr';sc.id='scr-music';
+    const tracks=[
+      {title:'Shape of You',artist:'Ed Sheeran',dur:'3:54',color:'#e11d48'},
+      {title:'Blinding Lights',artist:'The Weeknd',dur:'3:22',color:'#7c3aed'},
+      {title:'Stay',artist:'Kid Laroi & Bieber',dur:'2:21',color:'#0891b2'},
+      {title:'Levitating',artist:'Dua Lipa',dur:'3:23',color:'#d97706'},
+      {title:'Peaches',artist:'Justin Bieber',dur:'3:18',color:'#16a34a'},
+      {title:'Good 4 U',artist:'Olivia Rodrigo',dur:'2:58',color:'#dc2626'},
+    ];
+    sc.innerHTML=`
+      <div class="atb"><button class="btn-back" onclick="closeApp('music')">← Назад</button><span class="atb-title">🎵 Музыка</span><span style="width:60px"></span></div>
+      <div class="scr-body">
+        <div style="text-align:center;padding:20px 0 14px;">
+          <div id="music-art" style="width:140px;height:140px;border-radius:24px;background:linear-gradient(135deg,#e11d48,#7c3aed);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:60px;animation:spin2 4s linear infinite paused;" id="music-disc">🎵</div>
+          <div id="music-title" style="font-size:18px;font-weight:800;">Shape of You</div>
+          <div id="music-artist" style="font-size:13px;color:rgba(255,255,255,0.5);margin-top:3px;">Ed Sheeran</div>
+        </div>
+        <div style="padding:0 20px;">
+          <div style="height:4px;background:rgba(255,255,255,0.1);border-radius:2px;margin-bottom:20px;overflow:hidden;"><div id="music-prog" style="width:30%;height:100%;background:#38bdf8;border-radius:2px;transition:width .5s;"></div></div>
+          <div style="display:flex;justify-content:center;gap:20px;align-items:center;margin-bottom:20px;">
+            <button onclick="musicPrev()" style="background:none;border:none;color:#fff;font-size:28px;cursor:pointer;">⏮</button>
+            <button id="music-play-btn" onclick="musicToggle()" style="width:60px;height:60px;border-radius:50%;background:#38bdf8;border:none;color:#000;font-size:24px;cursor:pointer;">▶</button>
+            <button onclick="musicNext()" style="background:none;border:none;color:#fff;font-size:28px;cursor:pointer;">⏭</button>
+          </div>
+        </div>
+        <div style="padding:0 16px;">
+          <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.4);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Треки</div>
+          ${tracks.map((t,i)=>`<div onclick="musicPlay(${i})" style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;cursor:pointer;background:${i===0?'rgba(56,189,248,0.1)':'transparent'};margin-bottom:4px;" class="music-track-item">
+            <div style="width:42px;height:42px;border-radius:10px;background:${t.color};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🎵</div>
+            <div style="flex:1;"><div style="font-size:13px;font-weight:700;">${t.title}</div><div style="font-size:11px;color:rgba(255,255,255,0.4);">${t.artist}</div></div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.4);">${t.dur}</div>
+          </div>`).join('')}
+        </div>
+      </div>`;
+    document.body.appendChild(sc);
+  }
+  sc.classList.add('open');
+  addRec('music');STATE.currentApp='music';
+}
+const musicTracks=[
+  {title:'Shape of You',artist:'Ed Sheeran',color:'#e11d48'},
+  {title:'Blinding Lights',artist:'The Weeknd',color:'#7c3aed'},
+  {title:'Stay',artist:'Kid Laroi',color:'#0891b2'},
+  {title:'Levitating',artist:'Dua Lipa',color:'#d97706'},
+  {title:'Peaches',artist:'Justin Bieber',color:'#16a34a'},
+  {title:'Good 4 U',artist:'Olivia Rodrigo',color:'#dc2626'},
+];
+let musicIdx=0,musicPlaying=false,musicProgVal=30,musicProgInt=null;
+function musicPlay(i){
+  musicIdx=i;const t=musicTracks[i];
+  const tEl=document.getElementById('music-title');
+  const aEl=document.getElementById('music-artist');
+  const disc=document.getElementById('music-disc');
+  if(tEl)tEl.textContent=t.title;
+  if(aEl)aEl.textContent=t.artist;
+  if(disc)disc.style.background=`linear-gradient(135deg,${t.color},#000)`;
+  musicPlaying=true;
+  const btn=document.getElementById('music-play-btn');
+  if(btn){btn.textContent='⏸';btn.style.background='#f87171';}
+  clearInterval(musicProgInt);
+  musicProgVal=0;
+  musicProgInt=setInterval(()=>{
+    musicProgVal+=0.3;if(musicProgVal>=100){musicNext();return;}
+    const p=document.getElementById('music-prog');if(p)p.style.width=musicProgVal+'%';
+  },200);
+  toast('▶ '+t.title+' — '+t.artist);
+  // Play a short audio tone to indicate "playing"
+  try{
+    const ac=new(window.AudioContext||window.webkitAudioContext)();
+    const o=ac.createOscillator();const g=ac.createGain();
+    o.connect(g);g.connect(ac.destination);
+    o.frequency.value=440;g.gain.setValueAtTime(0.1,ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.3);
+    o.start(ac.currentTime);o.stop(ac.currentTime+0.3);
+  }catch(e){}
+}
+function musicToggle(){
+  if(musicPlaying){musicPlaying=false;clearInterval(musicProgInt);const btn=document.getElementById('music-play-btn');if(btn){btn.textContent='▶';btn.style.background='#38bdf8';}}
+  else musicPlay(musicIdx);
+}
+function musicNext(){musicPlay((musicIdx+1)%musicTracks.length);}
+function musicPrev(){musicPlay((musicIdx-1+musicTracks.length)%musicTracks.length);}
+
+// ==================== CALENDAR ====================
+function openCalendar(){
+  let sc=document.getElementById('scr-calendar2');
+  if(!sc){
+    sc=document.createElement('div');sc.className='scr';sc.id='scr-calendar2';
+    sc.innerHTML=`
+      <div class="atb"><button class="btn-back" onclick="closeApp('calendar2')">← Назад</button><span class="atb-title">📅 Календарь</span><span style="width:60px"></span></div>
+      <div class="scr-body" id="cal-body"></div>`;
+    document.body.appendChild(sc);
+  }
+  sc.classList.add('open');
+  addRec('calendar2');STATE.currentApp='calendar2';
+  renderCalendar();
+}
+let calDate=new Date();
+function renderCalendar(){
+  const el=document.getElementById('cal-body');if(!el)return;
+  const y=calDate.getFullYear(),m=calDate.getMonth();
+  const months=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  const days=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+  const first=new Date(y,m,1).getDay();
+  const offset=(first+6)%7;
+  const total=new Date(y,m+1,0).getDate();
+  const today=new Date();
+  let cells='';
+  for(let i=0;i<offset;i++)cells+=`<div></div>`;
+  for(let d=1;d<=total;d++){
+    const isToday=d===today.getDate()&&m===today.getMonth()&&y===today.getFullYear();
+    cells+=`<div onclick="calDay(${d})" style="height:38px;display:flex;align-items:center;justify-content:center;border-radius:50%;cursor:pointer;font-size:14px;font-weight:${isToday?800:600};background:${isToday?'#38bdf8':'transparent'};color:${isToday?'#000':'#fff'};">${d}</div>`;
+  }
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
+      <button onclick="calPrev()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px 10px;">‹</button>
+      <div style="font-size:17px;font-weight:800;">${months[m]} ${y}</div>
+      <button onclick="calNext()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px 10px;">›</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;padding:0 12px;margin-bottom:8px;">
+      ${days.map(d=>`<div style="text-align:center;font-size:12px;color:rgba(255,255,255,0.4);padding:6px 0;font-weight:700;">${d}</div>`).join('')}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;padding:0 12px;">${cells}</div>`;
+}
+function calPrev(){calDate.setMonth(calDate.getMonth()-1);renderCalendar();}
+function calNext(){calDate.setMonth(calDate.getMonth()+1);renderCalendar();}
+function calDay(d){toast('📅 '+d+' — нет событий');}
+
+// ==================== GALLERY ====================
+function openGallery(){
+  let sc=document.getElementById('scr-gallery');
+  if(!sc){
+    sc=document.createElement('div');sc.className='scr';sc.id='scr-gallery';
+    const colors=['#e11d48','#7c3aed','#0891b2','#d97706','#16a34a','#dc2626','#2563eb','#9333ea','#0d9488'];
+    const photos=colors.map((c,i)=>`<div onclick="openPhoto(${i})" style="aspect-ratio:1;border-radius:12px;background:linear-gradient(135deg,${c},#000);display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;">🖼</div>`).join('');
+    sc.innerHTML=`
+      <div class="atb"><button class="btn-back" onclick="closeApp('gallery')">← Назад</button><span class="atb-title">🖼 Галерея</span><span style="width:60px"></span></div>
+      <div class="scr-body">
+        <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:10px;font-weight:600;">ПОСЛЕДНИЕ ФОТО · ${colors.length}</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">${photos}</div>
+        <div style="text-align:center;margin-top:24px;color:rgba(255,255,255,0.3);font-size:13px;">
+          <div style="font-size:36px;margin-bottom:8px;">📷</div>
+          Сделай фото в приложении Камера<br>чтобы они появились здесь
+        </div>
+      </div>`;
+    document.body.appendChild(sc);
+  }
+  sc.classList.add('open');
+  addRec('gallery');STATE.currentApp='gallery';
+}
+function openPhoto(i){toast('Фото '+(i+1));}
+
+// ==================== GAMES MENU ====================
+function openGamesMenu(){
+  let sc=document.getElementById('scr-games');
+  if(!sc){
+    sc=document.createElement('div');sc.className='scr';sc.id='scr-games';
+    const games=[
+      {id:'snake',ico:'🐍',name:'Змейка',desc:'Классическая игра',color:'#16a34a'},
+      {id:'ttt',ico:'⭕',name:'Крестики-нолики',desc:'Против ИИ',color:'#d97706'},
+      {id:'g2048',ico:'🔢',name:'2048',desc:'Сложи до 2048',color:'#dc2626'},
+    ];
+    sc.innerHTML=`
+      <div class="atb"><button class="btn-back" onclick="closeApp('games')">← Назад</button><span class="atb-title">🎮 LiteGames</span><span style="width:60px"></span></div>
+      <div class="scr-body">
+        <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Игры</div>
+        ${games.map(g=>`<div onclick="document.getElementById('scr-games').classList.remove('open');setTimeout(()=>openApp('${g.id}'),50);" style="display:flex;align-items:center;gap:14px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:14px;margin-bottom:8px;cursor:pointer;">
+          <div style="width:56px;height:56px;border-radius:14px;background:${g.color};display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;">${g.ico}</div>
+          <div><div style="font-size:15px;font-weight:800;">${g.name}</div><div style="font-size:12px;color:rgba(255,255,255,0.45);margin-top:2px;">${g.desc}</div></div>
+        </div>`).join('')}
+      </div>`;
+    document.body.appendChild(sc);
+  }
+  sc.classList.add('open');
+  addRec('games');STATE.currentApp='games';
+}
+
+// ==================== WEATHER APP ====================
+const WEATHER_CITIES={
+  'Бендеры':{t:18,d:'Переменная облачность',i:'⛅',h:68,w:14,loc:'Бендеры, Молдова'},
+  'Москва':{t:8,d:'Облачно',i:'☁️',h:75,w:20,loc:'Москва, Россия'},
+  'Рим':{t:22,d:'Солнечно',i:'☀️',h:45,w:10,loc:'Рим, Италия'},
+  'Милан':{t:20,d:'Ясно',i:'🌤',h:50,w:12,loc:'Милан, Италия'},
+  'Лондон':{t:12,d:'Дождь',i:'🌧',h:88,w:25,loc:'Лондон, UK'},
+  'Нью-Йорк':{t:15,d:'Облачно',i:'⛅',h:60,w:18,loc:'Нью-Йорк, США'},
+  'Токио':{t:24,d:'Солнечно',i:'☀️',h:55,w:8,loc:'Токио, Япония'},
+  'Дубай':{t:38,d:'Жарко',i:'🌞',h:30,w:15,loc:'Дубай, ОАЭ'},
+  'Париж':{t:17,d:'Облачно',i:'⛅',h:65,w:14,loc:'Париж, Франция'},
+  'Берлин':{t:13,d:'Пасмурно',i:'☁️',h:72,w:16,loc:'Берлин, Германия'},
+  'Мадрид':{t:25,d:'Солнечно',i:'☀️',h:38,w:9,loc:'Мадрид, Испания'},
+  'Кишинёв':{t:17,d:'Солнечно',i:'🌤',h:60,w:12,loc:'Кишинёв, Молдова'},
+  'Стамбул':{t:21,d:'Ясно',i:'☀️',h:55,w:11,loc:'Стамбул, Турция'},
+  'Пекин':{t:20,d:'Смог',i:'🌫',h:58,w:22,loc:'Пекин, Китай'},
+};
+let weatherCity='Бендеры';
+function openWeatherApp(){
+  let sc=document.getElementById('scr-weather-app');
+  if(!sc){
+    sc=document.createElement('div');sc.className='scr';sc.id='scr-weather-app';
+    sc.innerHTML=`
+      <div class="atb"><button class="btn-back" onclick="document.getElementById('scr-weather-app').classList.remove('open');STATE.currentApp=null;">← Назад</button><span class="atb-title">🌤 Погода</span><span style="width:60px"></span></div>
+      <div class="scr-body" id="weather-content"></div>`;
+    document.body.appendChild(sc);
+  }
+  sc.classList.add('open');
+  addRec('weather');STATE.currentApp='weather-app';
+  renderWeather(weatherCity);
+}
+function renderWeather(city){
+  const d=WEATHER_CITIES[city]||{t:Math.round(Math.random()*30+5),d:'Переменная облачность',i:'🌤',h:60,w:15,loc:city};
+  const el=document.getElementById('weather-content');if(!el)return;
+  const days=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+  const today=new Date();
+  const forecast=Array.from({length:7},(_,i)=>{
+    const dd=new Date(today);dd.setDate(dd.getDate()+i);
+    const icos=['☀️','🌤','⛅','🌦','🌧'];
+    const ico=i===0?d.i:icos[Math.floor(Math.random()*4)];
+    const t=Math.round(d.t+Math.random()*6-3);
+    return `<div style="flex-shrink:0;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:13px;padding:10px 12px;text-align:center;min-width:62px;">
+      <div style="font-size:11px;color:rgba(255,255,255,0.5);font-weight:600;">${i===0?'Сег.':days[dd.getDay()]}</div>
+      <div style="font-size:22px;margin:5px 0;">${ico}</div>
+      <div style="font-size:13px;font-weight:700;">${t}°</div>
+    </div>`;
+  }).join('');
+  el.innerHTML=`
+    <div style="display:flex;gap:7px;margin-bottom:14px;">
+      <input id="w-search" type="text" list="w-cities" placeholder="Поиск города..." style="flex:1;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.2);border-radius:10px;padding:9px 12px;color:#fff;font-size:13px;font-family:inherit;outline:none;" onkeydown="if(event.key==='Enter')searchWeather()"/>
+      <datalist id="w-cities">${Object.keys(WEATHER_CITIES).map(c=>`<option value="${c}">`).join('')}</datalist>
+      <button onclick="searchWeather()" style="background:#38bdf8;border:none;color:#000;padding:9px 14px;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">🔍</button>
+    </div>
+    <div style="text-align:center;padding:16px 0 12px;">
+      <div style="font-size:14px;color:rgba(255,255,255,0.5);">📍 ${d.loc}</div>
+      <div style="font-size:56px;margin:6px 0;">${d.i}</div>
+      <div style="font-size:64px;font-weight:200;letter-spacing:-2px;line-height:1;">${d.t}°</div>
+      <div style="font-size:15px;color:rgba(255,255,255,0.6);margin-top:4px;">${d.d}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
+      <div style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:13px;padding:11px;text-align:center;"><div style="font-size:16px;font-weight:700;">💧${d.h}%</div><div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:3px;">Влажность</div></div>
+      <div style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:13px;padding:11px;text-align:center;"><div style="font-size:16px;font-weight:700;">💨${d.w}км/ч</div><div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:3px;">Ветер</div></div>
+      <div style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:13px;padding:11px;text-align:center;"><div style="font-size:16px;font-weight:700;">🌡${d.t-2}°</div><div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:3px;">Ощущается</div></div>
+    </div>
+    <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.4);margin-bottom:8px;">ПРОГНОЗ 7 ДНЕЙ</div>
+    <div style="display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px;">${forecast}</div>`;
+}
+function searchWeather(){
+  const q=(document.getElementById('w-search').value||'').trim();
+  if(!q)return;
+  const found=Object.keys(WEATHER_CITIES).find(k=>k.toLowerCase().includes(q.toLowerCase()));
+  if(found){weatherCity=found;renderWeather(found);toast('📍 '+WEATHER_CITIES[found].loc);}
+  else{
+    WEATHER_CITIES[q]={t:Math.round(Math.random()*25+5),d:'Переменная облачность',i:'🌤',h:Math.round(Math.random()*60+20),w:Math.round(Math.random()*25+5),loc:q};
+    weatherCity=q;renderWeather(q);toast('📍 '+q);
+  }
+}
+
+</script>
+
+<!-- SNAKE SCREEN -->
+<div class="scr" id="scr-snake" style="z-index:210;display:none;flex-direction:column;">
+  <div class="scr-top"><button class="btn-back" onclick="closeGame('snake')">← Назад</button><span class="scr-title">🐍 Змейка</span><span id="snake-score" style="font-size:13px;font-weight:800;color:#4ade80;">0</span></div>
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;gap:12px;">
+    <canvas id="snake-canvas" width="280" height="280" style="border:2px solid rgba(255,255,255,0.2);border-radius:12px;background:#0a0a1a;touch-action:none;"></canvas>
+    <div style="display:grid;grid-template-columns:repeat(3,54px);gap:6px;">
+      <div></div><button onclick="snakeDir(0,-1)" style="height:54px;border-radius:12px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:22px;cursor:pointer;">↑</button><div></div>
+      <button onclick="snakeDir(-1,0)" style="height:54px;border-radius:12px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:22px;cursor:pointer;">←</button>
+      <button onclick="snakeDir(0,1)" style="height:54px;border-radius:12px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:22px;cursor:pointer;">↓</button>
+      <button onclick="snakeDir(1,0)" style="height:54px;border-radius:12px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:22px;cursor:pointer;">→</button>
+    </div>
+    <button id="snake-start-btn" onclick="snakeStart()" style="background:#4ade80;border:none;color:#000;padding:10px 28px;border-radius:20px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;">▶ Начать</button>
+  </div>
+</div>
+
+<!-- TTT SCREEN -->
+<div class="scr" id="scr-ttt" style="z-index:210;display:none;flex-direction:column;">
+  <div class="scr-top"><button class="btn-back" onclick="closeGame('ttt')">← Назад</button><span class="scr-title">⭕ Крестики-нолики</span><span id="ttt-status" style="font-size:12px;color:#fbbf24;">Твой ход</span></div>
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:16px;">
+    <div id="ttt-board" style="display:grid;grid-template-columns:repeat(3,88px);grid-template-rows:repeat(3,88px);gap:8px;"></div>
+    <button onclick="tttReset()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:10px 26px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">🔄 Новая игра</button>
+  </div>
+</div>
+
+<!-- 2048 SCREEN -->
+<div class="scr" id="scr-g2048" style="z-index:210;display:none;flex-direction:column;">
+  <div class="scr-top"><button class="btn-back" onclick="closeGame('g2048')">← Назад</button><span class="scr-title">🔢 2048</span><span id="g2048-score" style="font-size:13px;font-weight:800;color:#fb923c;">0</span></div>
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;gap:12px;">
+    <div id="g2048-board" style="display:grid;grid-template-columns:repeat(4,64px);grid-template-rows:repeat(4,64px);gap:6px;background:rgba(255,255,255,0.06);padding:8px;border-radius:14px;touch-action:none;"></div>
+    <button onclick="init2048()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:10px 26px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">🔄 Новая игра</button>
+  </div>
+</div>
+
+<!-- CLOCK SCREEN -->
+<div class="scr" id="scr-clock" style="z-index:210;display:none;flex-direction:column;">
+  <div class="scr-top"><button class="btn-back" onclick="closeGame('clock')">← Назад</button><span class="scr-title">⏰ Часы</span><span style="width:60px"></span></div>
+  <div style="flex:1;overflow-y:auto;padding:16px;">
+    <div style="text-align:center;padding:24px 0 18px;">
+      <div id="big-clock" style="font-size:68px;font-weight:200;letter-spacing:-3px;line-height:1;"></div>
+      <div id="big-date" style="font-size:15px;color:rgba(255,255,255,0.5);margin-top:6px;"></div>
+    </div>
+    <div style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.14);border-radius:18px;padding:16px;margin-bottom:10px;">
+      <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">⏱ Таймер</div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+        <input id="timer-min" type="number" min="0" max="99" value="1" style="width:60px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:7px;color:#fff;font-size:15px;font-family:inherit;text-align:center;outline:none;"/>
+        <span style="font-size:18px;font-weight:700;">мин</span>
+        <input id="timer-sec" type="number" min="0" max="59" value="0" style="width:60px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:7px;color:#fff;font-size:15px;font-family:inherit;text-align:center;outline:none;"/>
+        <span style="font-size:18px;font-weight:700;">сек</span>
+      </div>
+      <div id="timer-display" style="font-size:40px;font-weight:200;text-align:center;margin:8px 0;letter-spacing:2px;">01:00</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="timerStart()" style="flex:1;background:#38bdf8;border:none;color:#000;padding:10px;border-radius:12px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">▶ Старт</button>
+        <button onclick="timerStop()" style="flex:1;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:10px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">⏸ Стоп</button>
+        <button onclick="timerReset()" style="flex:1;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:10px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">🔄</button>
+      </div>
+    </div>
+    <div style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.14);border-radius:18px;padding:16px;">
+      <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">🌍 Мировое время</div>
+      <div id="world-times"></div>
+    </div>
+  </div>
+</div>
+<!-- LOCK -->
+<div id="lock">
+  <div id="lk-time" style="font-size:72px;font-weight:200;letter-spacing:-3px;line-height:1;color:#fff;">00:00</div>
+  <div id="lk-date" style="font-size:14px;color:rgba(255,255,255,0.5);margin-top:4px;"></div>
+  <div style="font-size:11px;letter-spacing:7px;color:rgba(255,255,255,0.25);text-transform:uppercase;margin-top:8px;">LiteOS 3.0</div>
+  <div style="margin-top:40px;">
+    <button id="unlock-btn" type="button" onclick="document.getElementById('lock').style.display='none';" style="display:block;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.6);color:#fff;padding:16px 44px;border-radius:50px;font-size:17px;font-weight:800;cursor:pointer;font-family:inherit;">🔓 Разблокировать</button>
+  </div>
+</div>
+</body>
+</html>
